@@ -60,9 +60,17 @@ arabic-trivia/
 
 ---
 
-## How to add questions (the agent part)
+## How to add questions
 
-The quiz is a single JSON file. Edit `questions.json` — the server hot-reloads it within a second. Add as many questions as you want (10 is a good party length; 30+ is fine too).
+**Easy path: the admin web UI.** Visit `/admin` and log in (default password `admin`, override with the `ADMIN_PASSWORD` env var). The UI lets you add, edit, delete, search, filter by difficulty/category, and see live stats.
+
+**Agent path: the bulk API.** If you (or an agent) want to add a lot of questions programmatically:
+```bash
+node scripts/agent-bulk-add.js http://localhost:3000 yourPassword
+```
+The script posts a list of questions to `POST /admin/api/questions/bulk`. See `scripts/agent-bulk-add.js` for the shape and as a template for adding more.
+
+**Direct file edit (legacy).** Edit `questions.json` — the server hot-reloads it within a second. This is the **seed** for fresh deploys; once the SQLite DB has questions, the file is ignored unless the DB is empty.
 
 ### Schema
 
@@ -141,6 +149,28 @@ The easiest way to extend the quiz is to ask your agent (Mavis) to do it. Just p
 **Scoring:** correct answer = up to 1000 points, weighted by speed (full points if you answer in the first second, 0 if you wait until the timer expires).
 
 ---
+
+## Deploying to Railway (or any Node host)
+
+This is a single Node process — no build step, no database to provision separately. Deploy with one click from the GitHub repo on [Railway](https://railway.app), [Render](https://render.com), or [Fly.io](https://fly.io).
+
+**Two env vars to set in the dashboard:**
+
+| Var | Why | Example |
+|---|---|---|
+| `ADMIN_PASSWORD` | Pin a known password for the `/admin` UI. If unset, a random one is generated and printed in the deploy logs on first boot. | `kebab-on-mars-42` |
+| `PORT` | (Usually auto-set by Railway; no need to touch.) | `3000` |
+
+**One persistent volume to add** (otherwise admin edits are lost on redeploy):
+
+- Mount path: `/data`
+- The SQLite DB (`/data/questions.db`) and the seeded `questions.json` (read once, on first boot) live here.
+
+That's it. After the deploy finishes:
+
+- `https://<your-app>.up.railway.app/` — player phone page (scans QR or types PIN)
+- `https://<your-app>.up.railway.app/host` — TV display
+- `https://<your-app>.up.railway.app/admin` — admin UI (login with `ADMIN_PASSWORD`)
 
 ## Customizing the look
 

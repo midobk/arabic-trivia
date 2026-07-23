@@ -5,4 +5,10 @@ node_modules/
 .idea/
 .vscode/
 screenshots/
+
+# SQLite question database (runtime data, not source)
+data/
+
+# Test variants
+questions.test.json
 .vercel

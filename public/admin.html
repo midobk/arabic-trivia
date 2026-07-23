@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم — لعبة المعلومات</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    /* Admin-specific styles — kept inline for one-file portability */
+    body { background: #f4f5fa; color: #1a1240; }
+    .admin-shell { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+    .admin-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      background: #fff; padding: 1rem 1.4rem; border-radius: 1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      margin-bottom: 1.5rem;
+    }
+    .admin-top .brand { display: flex; align-items: center; gap: 0.8rem; }
+    .admin-top .brand .dot {
+      width: 2.2rem; height: 2.2rem; border-radius: 0.6rem;
+      background: linear-gradient(135deg, #46178F 0%, #864CBF 100%);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 900; font-size: 1.1rem;
+    }
+    .admin-top .brand h1 { margin: 0; font-size: 1.1rem; font-weight: 900; }
+    .admin-top .brand p { margin: 0; color: #888; font-size: 0.8rem; }
+    .admin-top .actions { display: flex; gap: 0.6rem; }
+    .admin-top .actions a, .admin-top .actions button {
+      border: 1px solid #e2e2ec; background: #fff; color: #1a1240;
+      padding: 0.5rem 0.9rem; border-radius: 0.6rem; font-size: 0.9rem;
+      text-decoration: none; cursor: pointer; font-weight: 600;
+    }
+    .admin-top .actions .danger { color: #b81832; border-color: #f3c2c8; background: #fff5f6; }
+
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #fff; border-radius: 1rem; padding: 1.2rem 1.4rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .stat-card .label { font-size: 0.8rem; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 2.2rem; font-weight: 900; color: #1a1240; margin-top: 0.4rem; }
+    .stat-card .value.small { font-size: 1.2rem; font-weight: 700; }
+    .stat-card.accent { background: linear-gradient(135deg, #46178F 0%, #864CBF 100%); color: #fff; }
+    .stat-card.accent .label, .stat-card.accent .value { color: #fff; }
+
+    .q-section {
+      background: #fff; border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      margin-bottom: 1.5rem;
+    }
+    .q-section h2 {
+      margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; color: #1a1240;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .q-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .q-row {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 1rem;
+      padding: 0.9rem 1.1rem; border: 1px solid #e8e8f0; border-radius: 0.7rem;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .q-row:hover { background: #f8f8fc; border-color: #d8d8e4; }
+    .q-row .q-body .q-text { font-weight: 700; color: #1a1240; margin-bottom: 0.3rem; line-height: 1.4; }
+    .q-row .q-body .q-meta { font-size: 0.78rem; color: #888; display: flex; gap: 0.6rem; align-items: center; }
+    .q-row .q-body .q-meta .pill {
+      background: #f0eef5; color: #46178F; padding: 0.15rem 0.55rem;
+      border-radius: 999px; font-weight: 700; font-size: 0.72rem;
+    }
+    .q-row .q-body .q-meta .pill.diff-easy   { background: #e6f6e8; color: #26890C; }
+    .q-row .q-body .q-meta .pill.diff-medium { background: #fff5d9; color: #b67a00; }
+    .q-row .q-body .q-meta .pill.diff-hard   { background: #fde0e5; color: #b81832; }
+    .q-row .q-body .q-meta .choices-preview { color: #555; }
+    .q-row .q-actions { display: flex; gap: 0.4rem; }
+    .q-row .q-actions button {
+      background: #fff; border: 1px solid #d8d8e4; color: #1a1240;
+      padding: 0.4rem 0.7rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .q-row .q-actions button.danger { color: #b81832; border-color: #f3c2c8; }
+    .q-row .q-actions button:hover { background: #f4f4fa; }
+
+    .form-card { background: #fff; border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 1.5rem; }
+    .form-card h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: #555; font-weight: 700; }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      padding: 0.6rem 0.8rem; border: 1px solid #d8d8e4; border-radius: 0.5rem;
+      font-size: 0.95rem; font-family: inherit;
+    }
+    .form-grid textarea { min-height: 3.5rem; resize: vertical; }
+    .form-grid .choices { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-grid .choice-row {
+      display: grid; grid-template-columns: auto 1fr auto;
+      align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.7rem; border: 1px solid #e8e8f0; border-radius: 0.5rem;
+      background: #fafaff;
+    }
+    .form-grid .choice-row .correct-radio { width: 1.2rem; height: 1.2rem; accent-color: #46178F; }
+    .form-grid .choice-row input { border: none; background: transparent; padding: 0.3rem 0.4rem; }
+    .form-grid .choice-row .remove-btn { background: transparent; border: none; color: #b81832; cursor: pointer; font-size: 1rem; padding: 0 0.4rem; }
+    .form-grid .add-choice { background: #f0eef5; color: #46178F; border: 1px dashed #864CBF; padding: 0.5rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-weight: 700; }
+    .form-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1rem; }
+    .form-actions button, .form-actions a {
+      padding: 0.6rem 1.1rem; border-radius: 0.5rem; border: none; cursor: pointer;
+      font-size: 0.9rem; font-weight: 700; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .btn-primary { background: #46178F; color: #fff; }
+    .btn-primary:hover { background: #5a1eb0; }
+    .btn-secondary { background: #f0eef5; color: #46178F; }
+
+    .empty {
+      text-align: center; padding: 3rem 1rem; color: #888;
+    }
+    .empty .icon { font-size: 3rem; margin-bottom: 0.6rem; }
+
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: #1a1240; color: #fff; padding: 0.8rem 1.4rem; border-radius: 999px;
+      font-size: 0.9rem; font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      opacity: 0; transform: translateX(-50%) translateY(20px);
+      transition: opacity 200ms ease, transform 200ms ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #b81832; }
+
+    /* Login screen */
+    .login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1a0b3a 0%, #46178F 100%);
+      padding: 2rem;
+    }
+    .login-card {
+      background: #fff; border-radius: 1.4rem; padding: 2.4rem 2rem;
+      max-width: 380px; width: 100%;
+      box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4);
+    }
+    .login-card h1 { margin: 0 0 0.4rem; font-size: 1.4rem; }
+    .login-card p { margin: 0 0 1.4rem; color: #888; font-size: 0.9rem; }
+    .login-card input {
+      width: 100%; padding: 0.8rem 1rem; border: 1px solid #d8d8e4; border-radius: 0.6rem;
+      font-size: 1rem; margin-bottom: 1rem; font-family: inherit;
+    }
+    .login-card input:focus { border-color: #46178F; outline: none; }
+    .login-card button {
+      width: 100%; padding: 0.8rem; background: #46178F; color: #fff;
+      border: none; border-radius: 0.6rem; font-size: 1rem; font-weight: 800;
+      cursor: pointer;
+    }
+    .login-card .err { color: #b81832; font-size: 0.85rem; margin-bottom: 0.8rem; min-height: 1.2em; }
+    .login-card .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.4rem; }
+    .login-card .brand .dot {
+      width: 2.4rem; height: 2.4rem; border-radius: 0.6rem;
+      background: linear-gradient(135deg, #46178F 0%, #864CBF 100%);
+      display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 900;
+    }
+    .login-card .brand span { font-weight: 900; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid #e8e8f0; }
+    .tab {
+      padding: 0.6rem 1rem; background: transparent; border: none;
+      font-size: 0.95rem; font-weight: 700; color: #888; cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active { color: #46178F; border-bottom-color: #46178F; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+  'use strict';
+
+  // ── State ───────────────────────────────────────────────────────────────
+  const S = {
+    view: 'login',          // login | dashboard
+    questions: [],
+    stats: null,
+    editing: null,          // null = adding new, otherwise the question object
+    filter: { q: '', diff: 'all', cat: 'all' },
+  };
+
+  // ── API helper ──────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    const res = await fetch(path, {
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      ...opts,
+    });
+    const ct = res.headers.get('content-type') || '';
+    const body = ct.includes('json') ? await res.json() : await res.text();
+    if (!res.ok) throw Object.assign(new Error((body && body.error) || res.statusText), { status: res.status, body });
+    return body;
+  }
+
+  function toast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = 'toast'; }, 2400);
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────
+  function render() {
+    const root = document.getElementById('root');
+    if (S.view === 'login') return renderLogin(root);
+    if (S.view === 'dashboard') return renderDashboard(root);
+  }
+
+  function renderLogin(root) {
+    root.innerHTML = `
+      <div class="login-wrap">
+        <form class="login-card" id="login-form">
+          <div class="brand">
+            <div class="dot">🎯</div>
+            <span>لعبة المعلومات — لوحة التحكم</span>
+          </div>
+          <h1>تسجيل الدخول</h1>
+          <p>أدخل كلمة السر لإدارة الأسئلة.</p>
+          <div class="err" id="err"></div>
+          <input type="password" id="password" placeholder="كلمة السر" autocomplete="current-password" autofocus>
+          <button type="submit">دخول</button>
+        </form>
+      </div>`;
+    document.getElementById('login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      try {
+        await api('/admin/api/login', { method: 'POST', body: JSON.stringify({ password }) });
+        S.view = 'dashboard';
+        await loadDashboard();
+        render();
+      } catch (err) {
+        document.getElementById('err').textContent = err.message || 'فشل تسجيل الدخول';
+      }
+    };
+  }
+
+  async function loadDashboard() {
+    try {
+      S.questions = await api('/admin/api/questions');
+      S.stats = await api('/admin/api/stats');
+    } catch (e) { toast('فشل التحميل: ' + e.message, true); }
+  }
+
+  function renderDashboard(root) {
+    const stats = S.stats || { total: 0, byDifficulty: [], byCategory: [] };
+    const easy   = (stats.byDifficulty.find(d => d.difficulty === 'easy') || {}).n || 0;
+    const medium = (stats.byDifficulty.find(d => d.difficulty === 'medium') || {}).n || 0;
+    const hard   = (stats.byDifficulty.find(d => d.difficulty === 'hard') || {}).n || 0;
+    const categories = stats.byCategory.length;
+
+    root.innerHTML = `
+      <div class="admin-shell">
+        <header class="admin-top">
+          <div class="brand">
+            <div class="dot">🎯</div>
+            <div>
+              <h1>لعبة المعلومات</h1>
+              <p>لوحة التحكم — إدارة الأسئلة</p>
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/host" target="_blank">شاشة المضيف ↗</a>
+            <a href="/" target="_blank">اللعبة ↗</a>
+            <button class="danger" id="btn-logout">خروج</button>
+          </div>
+        </header>
+
+        <div class="stat-grid">
+          <div class="stat-card accent">
+            <div class="label">إجمالي الأسئلة</div>
+            <div class="value">${stats.total}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">سهل</div>
+            <div class="value small">${easy}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">متوسط</div>
+            <div class="value small">${medium}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">صعب</div>
+            <div class="value small">${hard}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">عدد الفئات</div>
+            <div class="value small">${categories}</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab" data-tab="list">📋 الأسئلة (${stats.total})</button>
+          <button class="tab" data-tab="form">${S.editing ? '✏️ تعديل' : '➕ إضافة جديد'}</button>
+        </div>
+
+        <div id="tab-content"></div>
+      </div>
+      <div id="toast" class="toast"></div>`;
+
+    document.getElementById('btn-logout').onclick = async () => {
+      await api('/admin/api/logout', { method: 'POST' });
+      S.view = 'login';
+      render();
+    };
+    document.querySelectorAll('.tab').forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTab(btn.dataset.tab);
+      };
+    });
+
+    // Default: form tab if editing, list otherwise
+    const startTab = S.editing ? 'form' : 'list';
+    document.querySelector(`.tab[data-tab="${startTab}"]`).classList.add('active');
+    renderTab(startTab);
+  }
+
+  function renderTab(tab) {
+    const el = document.getElementById('tab-content');
+    if (tab === 'list') el.innerHTML = renderListHtml();
+    if (tab === 'form')  el.innerHTML = renderFormHtml();
+    if (tab === 'list') wireListEvents();
+    if (tab === 'form')  wireFormEvents();
+  }
+
+  // ── List tab ─────────────────────────────────────────────────────────────
+  function renderListHtml() {
+    let qs = S.questions.slice();
+    if (S.filter.q) {
+      const q = S.filter.q.toLowerCase();
+      qs = qs.filter((x) => x.question.toLowerCase().includes(q));
+    }
+    if (S.filter.diff !== 'all') qs = qs.filter((x) => x.difficulty === S.filter.diff);
+    if (S.filter.cat !== 'all') qs = qs.filter((x) => x.category === S.filter.cat);
+
+    const allCats = Array.from(new Set(S.questions.map((q) => q.category))).sort();
+
+    return `
+      <div class="q-section">
+        <h2>
+          <span>الأسئلة (${qs.length})</span>
+          <span style="font-weight:400; font-size:0.85rem; color:#888;">من أصل ${S.questions.length}</span>
+        </h2>
+        <div class="form-grid" style="margin-bottom: 1rem;">
+          <label class="full">
+            بحث
+            <input id="filter-q" placeholder="ابحث في نص السؤال..." value="${escapeAttr(S.filter.q)}">
+          </label>
+          <label>
+            الصعوبة
+            <select id="filter-diff">
+              <option value="all">الكل</option>
+              <option value="easy" ${S.filter.diff === 'easy' ? 'selected' : ''}>سهل</option>
+              <option value="medium" ${S.filter.diff === 'medium' ? 'selected' : ''}>متوسط</option>
+              <option value="hard" ${S.filter.diff === 'hard' ? 'selected' : ''}>صعب</option>
+            </select>
+          </label>
+          <label>
+            الفئة
+            <select id="filter-cat">
+              <option value="all">الكل</option>
+              ${allCats.map((c) => `<option value="${escapeAttr(c)}" ${S.filter.cat === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        ${qs.length === 0
+          ? `<div class="empty"><div class="icon">🤷</div>لا توجد أسئلة مطابقة للبحث.</div>`
+          : `<div class="q-list">${qs.map(renderQuestionRow).join('')}</div>`
+        }
+      </div>`;
+  }
+
+  function renderQuestionRow(q) {
+    const correctIdx = q.choices.findIndex((c) => c.correct);
+    const preview = q.choices.map((c, i) => `${i === correctIdx ? '✓' : '·'} ${c.text}`).join('  ·  ');
+    return `
+      <div class="q-row" data-id="${q.id}">
+        <div class="q-body">
+          <div class="q-text">${escapeHtml(q.question)}</div>
+          <div class="q-meta">
+            <span class="pill diff-${q.difficulty}">${difficultyLabel(q.difficulty)}</span>
+            <span class="pill">${escapeHtml(q.category)}</span>
+            <span class="choices-preview">${escapeHtml(preview)}</span>
+          </div>
+        </div>
+        <div class="q-actions">
+          <button data-act="edit">تعديل</button>
+          <button class="danger" data-act="del">حذف</button>
+        </div>
+      </div>`;
+  }
+
+  function wireListEvents() {
+    document.getElementById('filter-q').oninput = (e) => { S.filter.q = e.target.value; refreshListOnly(); };
+    document.getElementById('filter-diff').onchange = (e) => { S.filter.diff = e.target.value; refreshListOnly(); };
+    document.getElementById('filter-cat').onchange = (e) => { S.filter.cat = e.target.value; refreshListOnly(); };
+    document.querySelectorAll('.q-row [data-act="edit"]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = parseInt(btn.closest('.q-row').dataset.id, 10);
+        const q = S.questions.find((x) => x.id === id);
+        if (q) {
+          S.editing = JSON.parse(JSON.stringify(q));
+          document.querySelector('.tab[data-tab="form"]').click();
+        }
+      };
+    });
+    document.querySelectorAll('.q-row [data-act="del"]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = parseInt(btn.closest('.q-row').dataset.id, 10);
+        const q = S.questions.find((x) => x.id === id);
+        if (!q) return;
+        if (!confirm(`حذف هذا السؤال؟\n\n${q.question}`)) return;
+        try {
+          await api(`/admin/api/questions/${id}`, { method: 'DELETE' });
+          toast('تم الحذف');
+          await loadDashboard();
+          refreshListOnly();
+        } catch (e) { toast('فشل الحذف: ' + e.message, true); }
+      };
+    });
+  }
+
+  function refreshListOnly() {
+    const el = document.getElementById('tab-content');
+    if (!el) return;
+    // Re-render the list (assumes we're on the list tab)
+    if (!document.querySelector('.tab.active').dataset.tab.match('form')) {
+      el.innerHTML = renderListHtml();
+      wireListEvents();
+    }
+  }
+
+  // ── Form tab ────────────────────────────────────────────────────────────
+  function renderFormHtml() {
+    const q = S.editing || { question: '', choices: [{text:'',correct:true},{text:'',correct:false},{text:'',correct:false},{text:'',correct:false}], difficulty: 'medium', category: 'general' };
+    return `
+      <div class="form-card">
+        <h2>${S.editing ? 'تعديل سؤال' : 'إضافة سؤال جديد'}</h2>
+        <form id="q-form">
+          <div class="form-grid">
+            <label class="full">
+              نص السؤال
+              <textarea name="question" required placeholder="اكتب السؤال هنا...">${escapeHtml(q.question)}</textarea>
+            </label>
+            <label>
+              الصعوبة
+              <select name="difficulty">
+                <option value="easy"   ${q.difficulty === 'easy'   ? 'selected' : ''}>سهل</option>
+                <option value="medium" ${q.difficulty === 'medium' ? 'selected' : ''}>متوسط</option>
+                <option value="hard"   ${q.difficulty === 'hard'   ? 'selected' : ''}>صعب</option>
+              </select>
+            </label>
+            <label>
+              الفئة
+              <input name="category" value="${escapeAttr(q.category || 'general')}" placeholder="general">
+            </label>
+            <label class="full">
+              الخيارات (حدد الإجابة الصحيحة)
+              <div class="choices" id="choices">
+                ${q.choices.map((c, i) => renderChoiceRow(c, i)).join('')}
+              </div>
+              <button type="button" class="add-choice" id="add-choice" style="margin-top:0.4rem;">+ إضافة خيار</button>
+            </label>
+          </div>
+          <div class="form-actions">
+            ${S.editing ? '<button type="button" class="btn-secondary" id="btn-cancel">إلغاء</button>' : ''}
+            <button type="submit" class="btn-primary">${S.editing ? 'حفظ التعديل' : 'إضافة السؤال'}</button>
+          </div>
+        </form>
+      </div>`;
+  }
+
+  function renderChoiceRow(c, i) {
+    return `
+      <div class="choice-row" data-idx="${i}">
+        <input type="radio" class="correct-radio" name="correct" ${c.correct ? 'checked' : ''}>
+        <input type="text" class="choice-text" value="${escapeAttr(c.text)}" placeholder="نص الخيار ${i + 1}">
+        <button type="button" class="remove-btn" title="حذف">✕</button>
+      </div>`;
+  }
+
+  function wireFormEvents() {
+    const form = document.getElementById('q-form');
+    if (!form) return;
+
+    document.getElementById('add-choice').onclick = () => {
+      const container = document.getElementById('choices');
+      const i = container.children.length;
+      if (i >= 6) { toast('الحد الأقصى 6 خيارات', true); return; }
+      const div = document.createElement('div');
+      div.innerHTML = renderChoiceRow({ text: '', correct: false }, i);
+      container.appendChild(div.firstElementChild);
+      wireChoiceRow(container.lastElementChild);
+    };
+
+    document.querySelectorAll('#choices .choice-row').forEach(wireChoiceRow);
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const choices = [];
+      let correctCount = 0;
+      document.querySelectorAll('#choices .choice-row').forEach((row) => {
+        const text = row.querySelector('.choice-text').value.trim();
+        const correct = row.querySelector('.correct-radio').checked;
+        if (text) { choices.push({ text, correct }); if (correct) correctCount++; }
+      });
+      if (!fd.get('question').trim()) return toast('نص السؤال مطلوب', true);
+      if (choices.length < 2) return toast('يجب أن يكون هناك خياران على الأقل', true);
+      if (correctCount !== 1) return toast('يجب تحديد إجابة صحيحة واحدة بالضبط', true);
+
+      const body = {
+        question: fd.get('question').trim(),
+        choices,
+        difficulty: fd.get('difficulty'),
+        category: fd.get('category').trim() || 'general',
+      };
+      try {
+        if (S.editing) {
+          await api(`/admin/api/questions/${S.editing.id}`, { method: 'PUT', body: JSON.stringify(body) });
+          toast('تم حفظ التعديل');
+          S.editing = null;
+        } else {
+          await api('/admin/api/questions', { method: 'POST', body: JSON.stringify(body) });
+          toast('تمت إضافة السؤال');
+        }
+        await loadDashboard();
+        document.querySelector('.tab[data-tab="list"]').click();
+      } catch (err) { toast('فشل الحفظ: ' + err.message, true); }
+    };
+
+    if (S.editing) {
+      const cancel = document.getElementById('btn-cancel');
+      if (cancel) cancel.onclick = () => { S.editing = null; document.querySelector('.tab[data-tab="list"]').click(); };
+    }
+  }
+
+  function wireChoiceRow(row) {
+    row.querySelector('.remove-btn').onclick = () => {
+      const container = document.getElementById('choices');
+      if (container.children.length <= 2) return toast('يجب أن يكون هناك خياران على الأقل', true);
+      row.remove();
+    };
+    row.querySelector('.correct-radio').onchange = () => {
+      // Enforce single correct
+      document.querySelectorAll('#choices .correct-radio').forEach((r) => { r.checked = (r === row.querySelector('.correct-radio')); });
+    };
+  }
+
+  // ── Util ────────────────────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+  function difficultyLabel(d) { return { easy: 'سهل', medium: 'متوسط', hard: 'صعب' }[d] || d; }
+
+  // ── Boot ────────────────────────────────────────────────────────────────
+  (async () => {
+    try {
+      const me = await api('/admin/api/me');
+      if (me.authed) {
+        S.view = 'dashboard';
+        await loadDashboard();
+      }
+    } catch (e) { /* not authed */ }
+    render();
+  })();
+  </script>
+</body>
+</html>

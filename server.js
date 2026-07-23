@@ -8,11 +8,12 @@ const path = require('path');
 const os = require('os');
 const { WebSocketServer } = require('ws');
 const QRCode = require('qrcode');
+const db = require('./lib/db');
+const admin = require('./lib/admin');
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
-const QUESTIONS_FILE = process.env.QUESTIONS_FILE || './questions.json';
 
-// ── Load questions ──────────────────────────────────────────────────────────
+// ── Load questions from SQLite ─────────────────────────────────────────────
 
 let QUESTIONS = [];
 let SETTINGS = { timePerQuestion: 20, showCorrectAnswer: true };
@@ -20,29 +21,30 @@ let META = { title: 'لعبة المعلومات', subtitle: '' };
 
 function loadQuestions() {
   try {
-    const raw = fs.readFileSync(QUESTIONS_FILE, 'utf8');
-    const data = JSON.parse(raw);
-    QUESTIONS = (data.questions || []).map((q, i) => ({
-      id: i,
+    db.init();
+    const rows = db.listAll();
+    QUESTIONS = rows.map((q) => ({
+      id: q.id,
       question: String(q.question || '').trim(),
       choices: (q.choices || []).map((c) => ({
         text: String(c.text || '').trim(),
         correct: !!c.correct,
       })),
     }));
-    // Validate: each question must have 2-6 choices, exactly one correct.
+    // Validate every question (defensive — DB inserts are also validated)
     for (const q of QUESTIONS) {
       if (q.choices.length < 2 || q.choices.length > 6) {
-        throw new Error(`السؤال ${q.id + 1} يجب أن يحتوي على 2 إلى 6 خيارات`);
+        throw new Error(`Question #${q.id} must have 2-6 choices`);
       }
       const correctCount = q.choices.filter((c) => c.correct).length;
       if (correctCount !== 1) {
-        throw new Error(`السؤال ${q.id + 1} يجب أن يحتوي على إجابة صحيحة واحدة بالضبط`);
+        throw new Error(`Question #${q.id} must have exactly one correct answer`);
       }
     }
-    SETTINGS = { timePerQuestion: 20, showCorrectAnswer: true, ...(data.settings || {}) };
-    META = { title: 'لعبة المعلومات', subtitle: '', ...(data.meta || {}) };
-    console.log(`✓ Loaded ${QUESTIONS.length} questions from ${QUESTIONS_FILE}`);
+    // Meta lives in code (rarely changes); per-question categories live in DB.
+    SETTINGS = { timePerQuestion: parseInt(process.env.TIME_PER_QUESTION, 10) || 20, showCorrectAnswer: true };
+    META = { title: process.env.GAME_TITLE || 'لعبة المعلومات', subtitle: process.env.GAME_SUBTITLE || 'اختبر معلوماتك' };
+    console.log(`✓ Loaded ${QUESTIONS.length} questions from ${db.DB_PATH}`);
   } catch (e) {
     console.error(`✗ Failed to load questions: ${e.message}`);
     process.exit(1);
@@ -50,10 +52,11 @@ function loadQuestions() {
 }
 
 loadQuestions();
-fs.watchFile(QUESTIONS_FILE, { interval: 1000 }, () => {
-  console.log('⟳ questions.json changed — reloading…');
+// Hot-reload when the DB file changes (covers direct JSON edits + a
+// future migration path). The primary write path is the /admin API.
+fs.watchFile(db.DB_PATH, { interval: 1000 }, () => {
+  console.log('⟳ DB changed — reloading questions…');
   loadQuestions();
-  // If a game is in progress, gracefully end it so the new questions take effect on next game.
   if (game.state !== 'lobby' && game.state !== 'end') {
     endGame();
   }
@@ -336,6 +339,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/host') {
       return await serveHostPage(res, req);
+    }
+    if (pathname === '/admin' || pathname === '/admin/') {
+      return admin.sendAdminHtml(res);
+    }
+    if (pathname.startsWith('/admin/api/')) {
+      return admin.handleAdminApi(req, res);
     }
     if (pathname.startsWith('/static/')) {
       return serveStatic(res, path.join(__dirname, 'public', pathname.slice(8)));
