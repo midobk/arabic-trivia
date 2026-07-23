@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "public/**/*", "use": "@vercel/static" }
-  ],
   "rewrites": [
+    { "source": "/", "destination": "/player.html" },
     { "source": "/host", "destination": "/host.html" },
-    { "source": "/static/(.*)", "destination": "/$1" },
-    { "source": "/api/:path*", "destination": "/api/index" }
+    { "source": "/static/:path*", "destination": "/:path*" },
+    { "source": "/api/meta", "destination": "/api/index" },
+    { "source": "/api/health", "destination": "/api/index" }
   ]
 }
