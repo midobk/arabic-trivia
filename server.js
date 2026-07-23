@@ -19,9 +19,9 @@ let QUESTIONS = [];
 let SETTINGS = { timePerQuestion: 20, showCorrectAnswer: true };
 let META = { title: 'لعبة المعلومات', subtitle: '' };
 
-function loadQuestions() {
+async function loadQuestions() {
   try {
-    db.init();
+    await db.init();
     const rows = db.listAll();
     QUESTIONS = rows.map((q) => ({
       id: q.id,
@@ -47,20 +47,10 @@ function loadQuestions() {
     console.log(`✓ Loaded ${QUESTIONS.length} questions from ${db.DB_PATH}`);
   } catch (e) {
     console.error(`✗ Failed to load questions: ${e.message}`);
-    process.exit(1);
+    // Don't crash the server — admin UI is still up and can fix the DB.
+    QUESTIONS = [];
   }
 }
-
-loadQuestions();
-// Hot-reload when the DB file changes (covers direct JSON edits + a
-// future migration path). The primary write path is the /admin API.
-fs.watchFile(db.DB_PATH, { interval: 1000 }, () => {
-  console.log('⟳ DB changed — reloading questions…');
-  loadQuestions();
-  if (game.state !== 'lobby' && game.state !== 'end') {
-    endGame();
-  }
-});
 
 // ── Game state ──────────────────────────────────────────────────────────────
 
@@ -472,3 +462,19 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('   Tip: open the TV URL on the big screen, then scan the QR with phones.');
   console.log('');
 });
+
+// DB init runs after listen so the port is bound even if sql.js is slow to
+// load the WASM. Once init resolves we load questions and register the
+// hot-reload watcher.
+(async () => {
+  await loadQuestions();
+  // Hot-reload when the DB file changes. The primary write path is /admin.
+  fs.watchFile(db.DB_PATH, { interval: 1000 }, () => {
+    console.log('⟳ DB changed — reloading questions…');
+    loadQuestions().then(() => {
+      if (game.state !== 'lobby' && game.state !== 'end') {
+        endGame();
+      }
+    });
+  });
+})();
