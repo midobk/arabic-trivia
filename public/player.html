@@ -35,8 +35,20 @@
 
     // ── WebSocket ───────────────────────────────────────────────────────────
     let ws = null;
+    let wsRetries = 0;
+    const MAX_WS_RETRIES = 3;
     function connect() {
-      ws = new WebSocket(`ws://${location.host}`);
+      // On the Vercel static deployment (no Node server), `ws://vercel.app`
+      // will fail. After MAX_WS_RETRIES failures we render a demo banner
+      // instead of an infinite "connecting" loop.
+      const isVercel = /vercel\.app$/.test(location.hostname);
+      if (isVercel) { renderDemoBanner(); return; }
+      try {
+        ws = new WebSocket(`ws://${location.host}`);
+      } catch (e) {
+        renderDemoBanner();
+        return;
+      }
       ws.onopen = () => {
         // Rejoin the game if we've already joined (page refresh mid-game).
         if (S.phase !== 'join' && S.name && S.code) {
@@ -51,8 +63,36 @@
       ws.onclose = () => {
         if (S.phase !== 'join') S.phase = 'reconnecting';
         render();
+        wsRetries++;
+        if (wsRetries > MAX_WS_RETRIES) { renderDemoBanner(); return; }
         setTimeout(connect, 1500);
       };
+      ws.onerror = () => {
+        wsRetries++;
+        if (wsRetries > MAX_WS_RETRIES) { renderDemoBanner(); return; }
+      };
+    }
+
+    function renderDemoBanner() {
+      app.innerHTML = `
+        <div class="player" style="justify-content:center; gap:4vmin;">
+          <div style="font-size:14vmin">🎯</div>
+          <h1 style="font-size:7vmin; color:#1a1a1a">لعبة المعلومات</h1>
+          <p style="color:#555; max-width:80%; font-size:4vmin; line-height:1.6">
+            هذه نسخة العرض. اللعب الجماعي متاح فقط عند تشغيل الخادم محلياً.
+          </p>
+          <div style="background:#f2f2f2; border-radius:1rem; padding:3vmin 4vmin; width:100%; direction:ltr; text-align:left; font-family:ui-monospace,monospace; font-size:3.4vmin; color:#1a1a1a">
+            <div style="color:#46178F; font-weight:700; margin-bottom:1.5vmin">Quick start</div>
+            <div>git clone &lt;repo&gt;</div>
+            <div>cd arabic-trivia</div>
+            <div>npm install</div>
+            <div>npm start</div>
+          </div>
+          <a href="https://github.com/midobk/arabic-trivia" target="_blank" rel="noopener"
+             style="display:inline-block; background:#1a1a1a; color:#fff; padding:3.5vmin 6vmin; border-radius:1rem; font-weight:700; font-size:4vmin; text-decoration:none; margin-top:2vmin;">
+            View on GitHub ↗
+          </a>
+        </div>`;
     }
     function send(msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
 

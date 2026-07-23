@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "public/**/*", "use": "@vercel/static" }
+  ],
+  "rewrites": [
+    { "source": "/host", "destination": "/host.html" },
+    { "source": "/static/(.*)", "destination": "/$1" },
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ]
+}
