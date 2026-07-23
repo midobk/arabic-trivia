@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "title": "لعبة المعلومات",
+    "subtitle": "اختبر معلوماتك في مواضيع متنوعة"
+  },
+  "settings": {
+    "timePerQuestion": 3,
+    "showCorrectAnswer": true
+  },
+  "questions": [
+    {
+      "question": "ما هي عاصمة المملكة العربية السعودية؟",
+      "choices": [
+        { "text": "الرياض", "correct": true },
+        { "text": "جدة", "correct": false },
+        { "text": "مكة المكرمة", "correct": false },
+        { "text": "الدمام", "correct": false }
+      ]
+    },
+    {
+      "question": "كم عدد سور القرآن الكريم؟",
+      "choices": [
+        { "text": "112", "correct": false },
+        { "text": "114", "correct": true },
+        { "text": "116", "correct": false },
+        { "text": "120", "correct": false }
+      ]
+    },
+    {
+      "question": "ما هو أكبر محيط في العالم من حيث المساحة؟",
+      "choices": [
+        { "text": "المحيط الأطلسي", "correct": false },
+        { "text": "المحيط الهادئ", "correct": true },
+        { "text": "المحيط الهندي", "correct": false },
+        { "text": "المحيط المتجمد الشمالي", "correct": false }
+      ]
+    },
+    {
+      "question": "ما هو العنصر الكيميائي الذي رمزه \"O\"؟",
+      "choices": [
+        { "text": "الذهب", "correct": false },
+        { "text": "الأكسجين", "correct": true },
+        { "text": "الأوزون", "correct": false },
+        { "text": "الأكسيد", "correct": false }
+      ]
+    },
+    {
+      "question": "في أي عام هبط الإنسان لأول مرة على سطح القمر؟",
+      "choices": [
+        { "text": "1965", "correct": false },
+        { "text": "1967", "correct": false },
+        { "text": "1969", "correct": true },
+        { "text": "1971", "correct": false }
+      ]
+    },
+    {
+      "question": "كم عدد أركان الإسلام؟",
+      "choices": [
+        { "text": "أربعة", "correct": false },
+        { "text": "خمسة", "correct": true },
+        { "text": "ستة", "correct": false },
+        { "text": "سبعة", "correct": false }
+      ]
+    },
+    {
+      "question": "من هو مؤلف كتاب \"مقدمة ابن خلدون\"؟",
+      "choices": [
+        { "text": "ابن سينا", "correct": false },
+        { "text": "ابن النفيس", "correct": false },
+        { "text": "عبد الرحمن بن خلدون", "correct": true },
+        { "text": "ابن رشد", "correct": false }
+      ]
+    },
+    {
+      "question": "ما هي أطول عظمة في جسم الإنسان؟",
+      "choices": [
+        { "text": "عظمة العضد", "correct": false },
+        { "text": "عظمة الكعبرة", "correct": false },
+        { "text": "عظمة الفخذ", "correct": true },
+        { "text": "عظمة الظنبوب", "correct": false }
+      ]
+    },
+    {
+      "question": "ما هي العملة الرسمية لدولة اليابان؟",
+      "choices": [
+        { "text": "اليوان", "correct": false },
+        { "text": "الين", "correct": true },
+        { "text": "الوون", "correct": false },
+        { "text": "الروبية", "correct": false }
+      ]
+    },
+    {
+      "question": "ما هو الكوكب الأقرب إلى الشمس في مجموعتنا الشمسية؟",
+      "choices": [
+        { "text": "الزهرة", "correct": false },
+        { "text": "الأرض", "correct": false },
+        { "text": "عطارد", "correct": true },
+        { "text": "المريخ", "correct": false }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>لعبة المعلومات</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b0820">
+</head>
+<body>
+  <div id="app" class="player"></div>
+
+  <script>
+    'use strict';
+
+    // ── State ───────────────────────────────────────────────────────────────
+    const S = {
+      phase: 'join',          // join | lobby | asking | answered | reveal | leaderboard | end | error
+      code: '{{INITIAL_CODE}}',
+      name: localStorage.getItem('trivia_name') || '',
+      showQA: true,           // Kahoot "Show questions on devices" mode — ON by default
+      players: [],
+      currentQ: null,
+      myChoice: -1,
+      myScore: 0,
+      myRank: 0,
+      lastResult: null,       // {correct, points, total, correctIndex}
+      topPlayers: [],
+      finalPlayers: [],
+      error: '',
+      remaining: 0,
+    };
+
+    // ── WebSocket ───────────────────────────────────────────────────────────
+    let ws = null;
+    function connect() {
+      ws = new WebSocket(`ws://${location.host}`);
+      ws.onopen = () => {
+        // Rejoin the game if we've already joined (page refresh mid-game).
+        if (S.phase !== 'join' && S.name && S.code) {
+          send({ type: 'player:join', name: S.name, code: S.code });
+        }
+        render();
+      };
+      ws.onmessage = (e) => {
+        let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+        handle(m);
+      };
+      ws.onclose = () => {
+        if (S.phase !== 'join') S.phase = 'reconnecting';
+        render();
+        setTimeout(connect, 1500);
+      };
+    }
+    function send(msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
+
+    function handle(m) {
+      switch (m.type) {
+        case 'player:joined': {
+          S.code = m.code;
+          S.phase = 'lobby';
+          S.error = '';
+          render();
+          break;
+        }
+        case 'player:error': {
+          S.error = ({
+            invalid_code: 'رمز اللعبة غير صحيح. تحقق من الشاشة الكبيرة.',
+            invalid_name: 'الرجاء إدخال اسم صحيح.',
+            game_started: 'بدأت اللعبة بالفعل. انتظر الجولة التالية.',
+          })[m.reason] || 'حدث خطأ. حاول مرة أخرى.';
+          if (m.reason === 'game_started') S.phase = 'error_game_started';
+          render();
+          break;
+        }
+        case 'question': {
+          S.phase = 'asking';
+          S.currentQ = m;
+          S.myChoice = -1;
+          S.remaining = m.duration;
+          S.lastResult = null;
+          render();
+          break;
+        }
+        case 'player:changed': {
+          // Another player changed their answer; not used on the chooser's own
+          // screen (we already updated locally). Kept here for future
+          // "live vote" features.
+          break;
+        }
+        case 'tick': {
+          S.remaining = m.remaining;
+          updateTimer();
+          break;
+        }
+        case 'answer:result': {
+          S.lastResult = m;
+          S.myScore = m.total;
+          S.phase = 'answered';
+          render();
+          break;
+        }
+        case 'reveal': {
+          S.phase = 'reveal';
+          if (S.lastResult) S.lastResult.correctIndex = m.correctIndex;
+          render();
+          break;
+        }
+        case 'leaderboard': {
+          S.phase = 'leaderboard';
+          S.topPlayers = m.players;
+          const me = m.players.findIndex(p => p.name === S.name);
+          S.myRank = me >= 0 ? me + 1 : 0;
+          render();
+          break;
+        }
+        case 'game:end': {
+          S.phase = 'end';
+          S.finalPlayers = m.players;
+          const me = m.players.findIndex(p => p.name === S.name);
+          S.myRank = me >= 0 ? me + 1 : 0;
+          render();
+          break;
+        }
+        case 'game:reset': {
+          S.phase = 'lobby';
+          S.players = [];
+          S.currentQ = null;
+          S.lastResult = null;
+          S.topPlayers = [];
+          S.finalPlayers = [];
+          S.code = m.code || S.code;
+          S.error = '';
+          render();
+          break;
+        }
+      }
+    }
+
+    // ── Render ──────────────────────────────────────────────────────────────
+    const app = document.getElementById('app');
+
+    function render() {
+      switch (S.phase) {
+        case 'join':              return renderJoin();
+        case 'lobby':             return renderLobby();
+        case 'asking':            return renderAsking();
+        case 'answered':          return renderAnswered();
+        case 'reveal':            return renderReveal();
+        case 'leaderboard':       return renderLeaderboard();
+        case 'end':               return renderEnd();
+        case 'error_game_started':return renderErrorStarted();
+        case 'reconnecting':      return renderReconnecting();
+        default:                  return renderJoin();
+      }
+    }
+
+    function renderJoin() {
+      app.innerHTML = `
+        <div class="player" style="justify-content:center">
+          <h1>🎯 انضم للعبة</h1>
+          <p>أدخل اسمك ورمز اللعبة الظاهر على الشاشة الكبيرة.</p>
+          <div class="field">
+            <label for="name">الاسم</label>
+            <input id="name" type="text" inputmode="text" maxlength="20" autocomplete="off" placeholder="اكتب اسمك" value="${escapeHtml(S.name)}">
+          </div>
+          <div class="field">
+            <label for="code">رمز اللعبة</label>
+            <input id="code" class="code" type="text" inputmode="latin" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="XXXX" value="${escapeHtml((S.code || '').toUpperCase())}">
+          </div>
+          <div class="error-msg" id="err">${escapeHtml(S.error || '')}</div>
+          <button class="btn btn-primary" id="btn-join">انضم 🚀</button>
+        </div>`;
+      const nameEl = document.getElementById('name');
+      const codeEl = document.getElementById('code');
+      nameEl.focus();
+      codeEl.addEventListener('input', () => { codeEl.value = codeEl.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); S.error = ''; });
+      nameEl.addEventListener('input', () => { S.error = ''; });
+      document.getElementById('btn-join').onclick = submitJoin;
+      [nameEl, codeEl].forEach(el => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitJoin(); }));
+    }
+    function submitJoin() {
+      const name = document.getElementById('name').value.trim();
+      const code = document.getElementById('code').value.trim().toUpperCase();
+      if (!name) { S.error = 'الرجاء إدخال اسمك.'; render(); return; }
+      if (code.length !== 4) { S.error = 'الرمز يجب أن يكون 4 أحرف.'; render(); return; }
+      S.name = name;
+      S.code = code;
+      localStorage.setItem('trivia_name', name);
+      S.phase = 'joining';
+      S.error = '';
+      render();
+      // Wait for open socket
+      if (ws && ws.readyState === 1) {
+        send({ type: 'player:join', name, code });
+      } else {
+        // Buffer until connected
+        const onopen = () => { ws.removeEventListener('open', onopen); send({ type: 'player:join', name, code }); };
+        ws.addEventListener('open', onopen);
+      }
+    }
+    function renderReconnecting() {
+      app.innerHTML = `<div class="player" style="justify-content:center; text-align:center">
+        <div class="pulse" style="background:var(--ink-mute)"></div>
+        <h1>جاري إعادة الاتصال…</h1>
+      </div>`;
+    }
+    function renderErrorStarted() {
+      app.innerHTML = `<div class="player" style="justify-content:center; text-align:center; gap:3vmin">
+        <h1>بدأت اللعبة بالفعل</h1>
+        <p>اطلب من المضيف بدء لعبة جديدة، ثم انضم مرة أخرى.</p>
+        <button class="btn btn-secondary" id="btn-back">العودة</button>
+      </div>`;
+      document.getElementById('btn-back').onclick = () => { S.phase = 'join'; S.error = ''; render(); };
+    }
+
+    function renderLobby() {
+      app.innerHTML = `
+        <div class="player-lobby">
+          <div class="pulse"></div>
+          <div class="big">أهلاً ${escapeHtml(S.name)} 👋</div>
+          <div class="small">في انتظار بدء اللعبة على الشاشة الكبيرة…</div>
+        </div>`;
+    }
+
+    function renderAsking() {
+      const q = S.currentQ;
+      if (!q) return;
+      const buttons = q.choices.map((c, i) => {
+        const cls = ['pa','pb','pc','pd'][i] || 'pa';
+        return `<button class="pchoice ${cls}" data-i="${i}">
+          <span class="glyph">${c.shape || '◆'}</span>
+          ${S.showQA ? `<span class="label">${escapeHtml(c.text)}</span>` : ''}
+        </button>`;
+      }).join('');
+      const pct = q.duration > 0 ? (S.remaining / q.duration) * 100 : 0;
+      app.innerHTML = `
+        <div class="player-question">
+          <div class="corner-top">
+            <div class="pin">PIN: ${escapeHtml(S.code)}</div>
+            <div class="counter">${q.index + 1} of ${q.total}</div>
+          </div>
+          ${S.showQA ? `<div class="q-text">${escapeHtml(q.question)}</div>` : ''}
+          <div class="player-choices">${buttons}</div>
+          <div class="player-progress"><div class="fill" id="prog" style="width:${pct}%"></div></div>
+          <div class="corner-bottom">
+            <div class="name">${escapeHtml(S.name)}</div>
+            <div class="score" id="my-score">${S.myScore || 0}</div>
+          </div>
+        </div>`;
+      app.querySelectorAll('.pchoice').forEach(btn => {
+        btn.onclick = () => {
+          const i = parseInt(btn.dataset.i, 10);
+          if (S.myChoice === i) return;
+          S.myChoice = i;
+          app.querySelectorAll('.pchoice').forEach(b => b.classList.remove('picked'));
+          btn.classList.add('picked');
+          send({ type: 'player:answer', choice: i });
+        };
+      });
+      // Local countdown ticking (UI only)
+      if (S._tick) clearInterval(S._tick);
+      S._tick = setInterval(() => {
+        S.remaining = Math.max(0, S.remaining - 1);
+        const prog = document.getElementById('prog');
+        if (prog) {
+          const p = q.duration > 0 ? (S.remaining / q.duration) * 100 : 0;
+          prog.style.width = p + '%';
+          prog.classList.toggle('warn', S.remaining <= 5);
+        }
+        if (S.remaining <= 0) clearInterval(S._tick);
+      }, 1000);
+    }
+    function updateTimer() {
+      const prog = document.getElementById('prog');
+      if (!prog) return;
+      const dur = S.currentQ?.duration || 1;
+      prog.style.width = Math.max(0, (S.remaining / dur) * 100) + '%';
+      prog.classList.toggle('warn', S.remaining <= 5);
+    }
+
+    function renderAnswered() {
+      const r = S.lastResult || {};
+      const correct = r.correct === true;
+      const missed  = r.correct === false && r.status === 'no_answer';
+      const icon = correct ? '✓' : (missed ? '⏱' : '✗');
+      const iconCls = correct ? 'ok' : (missed ? 'miss' : 'bad');
+      const headline = correct ? 'إجابة صحيحة!' : (missed ? 'انتهى الوقت' : 'إجابة خاطئة');
+      app.innerHTML = `
+        <div class="player-result">
+          <div class="icon ${iconCls}">${icon}</div>
+          <h2>${headline}</h2>
+          ${correct ? `<div class="points">+${(r.points || 0).toLocaleString('en-US')}</div>` : ''}
+          <div class="sub">المجموع: ${(r.total || 0).toLocaleString('en-US')}</div>
+        </div>`;
+    }
+
+    function renderReveal() {
+      const q = S.currentQ;
+      const r = S.lastResult || {};
+      const correctIdx = (r.correctIndex != null) ? r.correctIndex : (q ? q.choices.findIndex(c => false) : -1);
+      if (!q) return renderAnswered();
+      const buttons = q.choices.map((c, i) => {
+        const cls = ['pa','pb','pc','pd'][i] || 'pa';
+        let state = '';
+        if (i === correctIdx) state = 'correct';
+        else if (i === S.myChoice) state = 'wrong';
+        else state = 'dim';
+        return `<div class="pchoice ${cls} ${state} disabled">
+          <span class="glyph">${c.shape || '◆'}</span>
+          ${S.showQA ? `<span class="label">${escapeHtml(c.text)}</span>` : ''}
+        </div>`;
+      }).join('');
+      app.innerHTML = `
+        <div class="player-question">
+          <div class="corner-top">
+            <div class="pin">PIN: ${escapeHtml(S.code)}</div>
+            <div class="counter">${q.index + 1} of ${q.total}</div>
+          </div>
+          <div class="player-choices">${buttons}</div>
+          <div class="player-progress"><div class="fill" style="width:0%"></div></div>
+          <div class="corner-bottom">
+            <div class="name">${escapeHtml(S.name)}</div>
+            <div class="score" id="my-score">${S.myScore || 0}</div>
+          </div>
+        </div>`;
+    }
+
+    function renderLeaderboard() {
+      const list = S.topPlayers || [];
+      const rows = list.slice(0, 5).map((p, i) => {
+        const me = p.name === S.name ? 'me' : '';
+        const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+        return `<div class="lb-row ${me}">
+          <div class="rank">${rank}</div>
+          <div>${escapeHtml(p.name)}</div>
+          <div class="score">${p.score.toLocaleString('en-US')}</div>
+        </div>`;
+      }).join('');
+      app.innerHTML = `
+        <div class="player-leaderboard">
+          <h2>النتائج المؤقتة</h2>
+          ${rows}
+          ${S.myRank ? `<div class="sub" style="text-align:center">ترتيبك الحالي: <strong>${S.myRank}</strong></div>` : ''}
+        </div>`;
+    }
+
+    function renderEnd() {
+      const all = S.finalPlayers || [];
+      const top3 = all.slice(0, 3);
+      const podiumHtml = `
+        <div class="podium">
+          ${podiumStep(top3[1], 'silver', 2)}
+          ${podiumStep(top3[0], 'gold', 1)}
+          ${podiumStep(top3[2], 'bronze', 3)}
+        </div>`;
+      const me = all.find(p => p.name === S.name);
+      const myRank = all.findIndex(p => p.name === S.name) + 1;
+      app.innerHTML = `
+        <div class="player">
+          <h1>🏆 انتهت اللعبة</h1>
+          ${podiumHtml}
+          ${me ? `<div class="sub" style="text-align:center">ترتيبك: <strong>${myRank}</strong> بـ <strong>${me.score.toLocaleString('en-US')}</strong> نقطة</div>` : ''}
+        </div>`;
+    }
+    function podiumStep(p, cls, place) {
+      if (!p) return `<div class="step ${cls}" style="opacity:0.3"><div class="plinth ${cls}">${place}</div></div>`;
+      const initial = (p.name || '?').trim().charAt(0);
+      return `
+        <div class="step ${cls}">
+          <div class="avatar">${escapeHtml(initial)}</div>
+          <div class="name">${escapeHtml(p.name)}</div>
+          <div class="score">${p.score.toLocaleString('en-US')}</div>
+          <div class="plinth ${cls}">${place}</div>
+        </div>`;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ── Boot ────────────────────────────────────────────────────────────────
+    connect();
+    render();
+  </script>
+</body>
+</html>
