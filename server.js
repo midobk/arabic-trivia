@@ -335,7 +335,7 @@ const server = http.createServer(async (req, res) => {
         (html) => html.replace('{{INITIAL_CODE}}', escapeHtml(code)));
     }
     if (pathname === '/host') {
-      return await serveHostPage(res);
+      return await serveHostPage(res, req);
     }
     if (pathname.startsWith('/static/')) {
       return serveStatic(res, path.join(__dirname, 'public', pathname.slice(8)));
@@ -424,16 +424,20 @@ function json(res, obj) {
   res.end(JSON.stringify(obj));
 }
 
-async function serveHostPage(res) {
-  const ip = getLocalIp();
-  const joinUrl = `http://${ip}:${PORT}/?code=${game.code}`;
+async function serveHostPage(res, req) {
+  // Use the public host the client reached us through (works for both local
+  // LAN and Cloudflare Tunnel / reverse-proxy setups). Fall back to the LAN
+  // IP if there's no Host header.
+  const host = (req && req.headers && req.headers.host) || `${getLocalIp()}:${PORT}`;
+  const proto = (req && req.headers && req.headers['x-forwarded-proto']) || 'http';
+  const joinUrl = `${proto}://${host}/?code=${game.code}`;
   const qrSvg = await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 240, color: { dark: '#0b0820', light: '#ffffff' } });
   fs.readFile(path.join(__dirname, 'public', 'host.html'), 'utf8', (err, html) => {
     if (err) { res.writeHead(500); res.end('Error'); return; }
     html = html
       .replaceAll('{{QR_SVG}}', qrSvg)
       .replaceAll('{{JOIN_URL}}', joinUrl)
-      .replaceAll('{{LOCAL_IP}}', ip)
+      .replaceAll('{{LOCAL_IP}}', host.split(':')[0])
       .replaceAll('{{PORT}}', String(PORT))
       .replaceAll('{{CODE}}', escapeHtml(game.code))
       .replaceAll('{{TITLE}}', escapeHtml(META.title))
