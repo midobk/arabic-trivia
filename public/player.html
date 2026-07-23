@@ -43,8 +43,9 @@
       // instead of an infinite "connecting" loop.
       const isVercel = /vercel\.app$/.test(location.hostname);
       if (isVercel) { S.phase = 'demo'; render(); return; }
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       try {
-        ws = new WebSocket(`ws://${location.host}`);
+        ws = new WebSocket(`${proto}://${location.host}`);
       } catch (e) {
         S.phase = 'demo'; render();
         return;

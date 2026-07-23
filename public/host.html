@@ -35,6 +35,9 @@
       throw new Error('demo-mode-vercel');
     }
 
+    // WebSocket scheme follows the page's scheme (wss for https, ws for http)
+    const WS_PROTO = location.protocol === 'https:' ? 'wss' : 'ws';
+
     // ── State (single source of truth on the host client) ───────────────────
     const S = {
       phase: 'connecting',     // connecting | lobby | asking | reveal | leaderboard | end
@@ -53,7 +56,7 @@
     // ── WebSocket ───────────────────────────────────────────────────────────
     let ws = null;
     function connect() {
-      ws = new WebSocket(`ws://${location.host}`);
+      ws = new WebSocket(`${WS_PROTO}://${location.host}`);
       ws.onopen = () => {
         S.phase = S.phase === 'connecting' ? 'lobby' : S.phase;
         send({ type: 'host:hello' });
