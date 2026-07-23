@@ -42,11 +42,11 @@
       // will fail. After MAX_WS_RETRIES failures we render a demo banner
       // instead of an infinite "connecting" loop.
       const isVercel = /vercel\.app$/.test(location.hostname);
-      if (isVercel) { renderDemoBanner(); return; }
+      if (isVercel) { S.phase = 'demo'; render(); return; }
       try {
         ws = new WebSocket(`ws://${location.host}`);
       } catch (e) {
-        renderDemoBanner();
+        S.phase = 'demo'; render();
         return;
       }
       ws.onopen = () => {
@@ -64,12 +64,12 @@
         if (S.phase !== 'join') S.phase = 'reconnecting';
         render();
         wsRetries++;
-        if (wsRetries > MAX_WS_RETRIES) { renderDemoBanner(); return; }
+        if (wsRetries > MAX_WS_RETRIES) { S.phase = 'demo'; render(); return; }
         setTimeout(connect, 1500);
       };
       ws.onerror = () => {
         wsRetries++;
-        if (wsRetries > MAX_WS_RETRIES) { renderDemoBanner(); return; }
+        if (wsRetries > MAX_WS_RETRIES) { S.phase = 'demo'; render(); return; }
       };
     }
 
@@ -193,6 +193,7 @@
         case 'end':               return renderEnd();
         case 'error_game_started':return renderErrorStarted();
         case 'reconnecting':      return renderReconnecting();
+        case 'demo':              return renderDemoBanner();
         default:                  return renderJoin();
       }
     }
