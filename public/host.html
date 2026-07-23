@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{TITLE}} — شاشة المضيف</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎯%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <!-- Server-injected QR. Kept OUTSIDE #app so re-renders don't wipe it. -->
   <div id="qr-template" style="display:none">{{QR_SVG}}</div>
+  <div class="theme-toggle" role="group" aria-label="المظهر">
+    <button data-theme-btn="light" title="فاتح" aria-label="المظهر الفاتح">☀</button>
+    <button data-theme-btn="dark"  title="داكن"  aria-label="المظهر الداكن">🌙</button>
+    <button data-theme-btn="system" title="تلقائي" aria-label="مظهر النظام">◐</button>
+  </div>
   <div id="app"></div>
 
   <script>
@@ -382,6 +388,25 @@
     function escapeHtml(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
+
+    // ── Theme toggle ───────────────────────────────────────────────────────
+    // Re-renders blow away the buttons, so use event delegation on document.
+    // Also keep the pressed-state in sync when the choice changes.
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-theme-btn]');
+      if (!btn) return;
+      window.TriviaTheme && window.TriviaTheme.set(btn.dataset.themeBtn);
+    });
+    function syncThemeButtons() {
+      const choice = (window.TriviaTheme && window.TriviaTheme.get()) || 'system';
+      document.querySelectorAll('[data-theme-btn]').forEach(b => {
+        b.setAttribute('aria-pressed', b.dataset.themeBtn === choice ? 'true' : 'false');
+      });
+    }
+    document.addEventListener('trivia:themechange', syncThemeButtons);
+    // Sync on every render so the button's pressed state matches the choice.
+    const origRender = render;
+    render = function () { origRender(); syncThemeButtons(); };
 
     // ── Boot ────────────────────────────────────────────────────────────────
     connect();

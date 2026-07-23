@@ -5,116 +5,127 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة التحكم — لعبة المعلومات</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <style>
-    /* Admin-specific styles — kept inline for one-file portability */
-    body { background: #f4f5fa; color: #1a1240; }
+    /* Admin-specific styles — kept inline for one-file portability.
+       Colors use the page-level theme vars from styles.css so dark mode works. */
+    body { background: var(--bg-0); color: var(--page-fg); transition: background 250ms ease, color 250ms ease; }
     .admin-shell { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
     .admin-top {
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-      background: #fff; padding: 1rem 1.4rem; border-radius: 1rem;
+      background: var(--page-card); padding: 1rem 1.4rem; border-radius: 1rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       margin-bottom: 1.5rem;
     }
     .admin-top .brand { display: flex; align-items: center; gap: 0.8rem; }
     .admin-top .brand .dot {
       width: 2.2rem; height: 2.2rem; border-radius: 0.6rem;
-      background: linear-gradient(135deg, #46178F 0%, #864CBF 100%);
+      background: linear-gradient(135deg, var(--c-purple) 0%, var(--c-purple-light) 100%);
       display: inline-flex; align-items: center; justify-content: center;
       color: #fff; font-weight: 900; font-size: 1.1rem;
     }
-    .admin-top .brand h1 { margin: 0; font-size: 1.1rem; font-weight: 900; }
-    .admin-top .brand p { margin: 0; color: #888; font-size: 0.8rem; }
-    .admin-top .actions { display: flex; gap: 0.6rem; }
+    .admin-top .brand h1 { margin: 0; font-size: 1.1rem; font-weight: 900; color: var(--page-fg); }
+    .admin-top .brand p { margin: 0; color: var(--page-fg-mute); font-size: 0.8rem; }
+    .admin-top .actions { display: flex; gap: 0.6rem; align-items: center; }
     .admin-top .actions a, .admin-top .actions button {
-      border: 1px solid #e2e2ec; background: #fff; color: #1a1240;
+      border: 1px solid var(--page-line); background: var(--page-card); color: var(--page-fg);
       padding: 0.5rem 0.9rem; border-radius: 0.6rem; font-size: 0.9rem;
       text-decoration: none; cursor: pointer; font-weight: 600;
     }
+    .admin-top .actions a:hover, .admin-top .actions button:hover { background: var(--page-card-2); }
     .admin-top .actions .danger { color: #b81832; border-color: #f3c2c8; background: #fff5f6; }
+    :root[data-theme="dark"] .admin-top .actions .danger { color: #ff8a9e; border-color: #5a1a25; background: #2a0e16; }
 
     .stat-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1rem; margin-bottom: 1.5rem;
     }
     .stat-card {
-      background: #fff; border-radius: 1rem; padding: 1.2rem 1.4rem;
+      background: var(--page-card); border-radius: 1rem; padding: 1.2rem 1.4rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    .stat-card .label { font-size: 0.8rem; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stat-card .value { font-size: 2.2rem; font-weight: 900; color: #1a1240; margin-top: 0.4rem; }
+    .stat-card .label { font-size: 0.8rem; color: var(--page-fg-mute); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 2.2rem; font-weight: 900; color: var(--page-fg); margin-top: 0.4rem; }
     .stat-card .value.small { font-size: 1.2rem; font-weight: 700; }
-    .stat-card.accent { background: linear-gradient(135deg, #46178F 0%, #864CBF 100%); color: #fff; }
+    .stat-card.accent { background: linear-gradient(135deg, var(--c-purple) 0%, var(--c-purple-light) 100%); color: #fff; }
     .stat-card.accent .label, .stat-card.accent .value { color: #fff; }
 
     .q-section {
-      background: #fff; border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
+      background: var(--page-card); border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       margin-bottom: 1.5rem;
     }
     .q-section h2 {
-      margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; color: #1a1240;
+      margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; color: var(--page-fg);
       display: flex; align-items: center; justify-content: space-between;
     }
     .q-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .q-row {
       display: grid; grid-template-columns: 1fr auto;
       align-items: center; gap: 1rem;
-      padding: 0.9rem 1.1rem; border: 1px solid #e8e8f0; border-radius: 0.7rem;
+      padding: 0.9rem 1.1rem; border: 1px solid var(--page-line); border-radius: 0.7rem;
       transition: background 120ms ease, border-color 120ms ease;
+      background: var(--page-card);
     }
-    .q-row:hover { background: #f8f8fc; border-color: #d8d8e4; }
-    .q-row .q-body .q-text { font-weight: 700; color: #1a1240; margin-bottom: 0.3rem; line-height: 1.4; }
-    .q-row .q-body .q-meta { font-size: 0.78rem; color: #888; display: flex; gap: 0.6rem; align-items: center; }
+    .q-row:hover { background: var(--page-card-2); border-color: var(--page-line); }
+    .q-row .q-body .q-text { font-weight: 700; color: var(--page-fg); margin-bottom: 0.3rem; line-height: 1.4; }
+    .q-row .q-body .q-meta { font-size: 0.78rem; color: var(--page-fg-mute); display: flex; gap: 0.6rem; align-items: center; }
     .q-row .q-body .q-meta .pill {
-      background: #f0eef5; color: #46178F; padding: 0.15rem 0.55rem;
+      background: var(--page-card-2); color: var(--c-purple); padding: 0.15rem 0.55rem;
       border-radius: 999px; font-weight: 700; font-size: 0.72rem;
     }
     .q-row .q-body .q-meta .pill.diff-easy   { background: #e6f6e8; color: #26890C; }
     .q-row .q-body .q-meta .pill.diff-medium { background: #fff5d9; color: #b67a00; }
     .q-row .q-body .q-meta .pill.diff-hard   { background: #fde0e5; color: #b81832; }
-    .q-row .q-body .q-meta .choices-preview { color: #555; }
+    :root[data-theme="dark"] .q-row .q-body .q-meta .pill.diff-easy   { background: #0e2a13; color: #6ee787; }
+    :root[data-theme="dark"] .q-row .q-body .q-meta .pill.diff-medium { background: #2d2008; color: #ffd24d; }
+    :root[data-theme="dark"] .q-row .q-body .q-meta .pill.diff-hard   { background: #2a0e13; color: #ff8a9e; }
+    .q-row .q-body .q-meta .choices-preview { color: var(--page-fg-dim); }
     .q-row .q-actions { display: flex; gap: 0.4rem; }
     .q-row .q-actions button {
-      background: #fff; border: 1px solid #d8d8e4; color: #1a1240;
+      background: var(--page-card); border: 1px solid var(--page-line); color: var(--page-fg);
       padding: 0.4rem 0.7rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600;
     }
     .q-row .q-actions button.danger { color: #b81832; border-color: #f3c2c8; }
-    .q-row .q-actions button:hover { background: #f4f4fa; }
+    :root[data-theme="dark"] .q-row .q-actions button.danger { color: #ff8a9e; border-color: #5a1a25; }
+    .q-row .q-actions button:hover { background: var(--page-card-2); }
 
-    .form-card { background: #fff; border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
+    .form-card { background: var(--page-card); border-radius: 1rem; padding: 1.4rem 1.4rem 1.6rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 1.5rem; }
-    .form-card h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; }
+    .form-card h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 900; color: var(--page-fg); }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem 1rem; }
     .form-grid .full { grid-column: 1 / -1; }
-    .form-grid label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: #555; font-weight: 700; }
+    .form-grid label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--page-fg-dim); font-weight: 700; }
     .form-grid input, .form-grid select, .form-grid textarea {
-      padding: 0.6rem 0.8rem; border: 1px solid #d8d8e4; border-radius: 0.5rem;
+      padding: 0.6rem 0.8rem; border: 1px solid var(--page-line); border-radius: 0.5rem;
       font-size: 0.95rem; font-family: inherit;
+      background: var(--page-card); color: var(--page-fg);
     }
     .form-grid textarea { min-height: 3.5rem; resize: vertical; }
     .form-grid .choices { display: flex; flex-direction: column; gap: 0.5rem; }
     .form-grid .choice-row {
       display: grid; grid-template-columns: auto 1fr auto;
       align-items: center; gap: 0.6rem;
-      padding: 0.5rem 0.7rem; border: 1px solid #e8e8f0; border-radius: 0.5rem;
-      background: #fafaff;
+      padding: 0.5rem 0.7rem; border: 1px solid var(--page-line); border-radius: 0.5rem;
+      background: var(--page-card-2);
     }
-    .form-grid .choice-row .correct-radio { width: 1.2rem; height: 1.2rem; accent-color: #46178F; }
-    .form-grid .choice-row input { border: none; background: transparent; padding: 0.3rem 0.4rem; }
+    .form-grid .choice-row .correct-radio { width: 1.2rem; height: 1.2rem; accent-color: var(--c-purple); }
+    .form-grid .choice-row input { border: none; background: transparent; padding: 0.3rem 0.4rem; color: var(--page-fg); }
     .form-grid .choice-row .remove-btn { background: transparent; border: none; color: #b81832; cursor: pointer; font-size: 1rem; padding: 0 0.4rem; }
-    .form-grid .add-choice { background: #f0eef5; color: #46178F; border: 1px dashed #864CBF; padding: 0.5rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-weight: 700; }
+    :root[data-theme="dark"] .form-grid .choice-row .remove-btn { color: #ff8a9e; }
+    .form-grid .add-choice { background: var(--page-card-2); color: var(--c-purple); border: 1px dashed var(--c-purple-light); padding: 0.5rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-weight: 700; }
     .form-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1rem; }
     .form-actions button, .form-actions a {
       padding: 0.6rem 1.1rem; border-radius: 0.5rem; border: none; cursor: pointer;
       font-size: 0.9rem; font-weight: 700; text-decoration: none;
       display: inline-flex; align-items: center; gap: 0.3rem;
     }
-    .btn-primary { background: #46178F; color: #fff; }
-    .btn-primary:hover { background: #5a1eb0; }
-    .btn-secondary { background: #f0eef5; color: #46178F; }
+    .btn-primary { background: var(--c-purple); color: #fff; }
+    .btn-primary:hover { background: var(--c-purple-light); }
+    .btn-secondary { background: var(--page-card-2); color: var(--c-purple); }
 
     .empty {
-      text-align: center; padding: 3rem 1rem; color: #888;
+      text-align: center; padding: 3rem 1rem; color: var(--page-fg-mute);
     }
     .empty .icon { font-size: 3rem; margin-bottom: 0.6rem; }
 
@@ -134,43 +145,46 @@
     /* Login screen */
     .login-wrap {
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #1a0b3a 0%, #46178F 100%);
+      background: linear-gradient(135deg, #1a0b3a 0%, var(--c-purple) 100%);
       padding: 2rem;
     }
     .login-card {
-      background: #fff; border-radius: 1.4rem; padding: 2.4rem 2rem;
+      background: var(--page-card); border-radius: 1.4rem; padding: 2.4rem 2rem;
       max-width: 380px; width: 100%;
       box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4);
     }
-    .login-card h1 { margin: 0 0 0.4rem; font-size: 1.4rem; }
-    .login-card p { margin: 0 0 1.4rem; color: #888; font-size: 0.9rem; }
+    .login-card h1 { margin: 0 0 0.4rem; font-size: 1.4rem; color: var(--page-fg); }
+    .login-card p { margin: 0 0 1.4rem; color: var(--page-fg-mute); font-size: 0.9rem; }
     .login-card input {
-      width: 100%; padding: 0.8rem 1rem; border: 1px solid #d8d8e4; border-radius: 0.6rem;
+      width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--page-line); border-radius: 0.6rem;
       font-size: 1rem; margin-bottom: 1rem; font-family: inherit;
+      background: var(--page-card); color: var(--page-fg);
     }
-    .login-card input:focus { border-color: #46178F; outline: none; }
+    .login-card input:focus { border-color: var(--c-purple); outline: none; }
     .login-card button {
-      width: 100%; padding: 0.8rem; background: #46178F; color: #fff;
+      width: 100%; padding: 0.8rem; background: var(--c-purple); color: #fff;
       border: none; border-radius: 0.6rem; font-size: 1rem; font-weight: 800;
       cursor: pointer;
     }
+    .login-card button:hover { background: var(--c-purple-light); }
     .login-card .err { color: #b81832; font-size: 0.85rem; margin-bottom: 0.8rem; min-height: 1.2em; }
+    :root[data-theme="dark"] .login-card .err { color: #ff8a9e; }
     .login-card .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.4rem; }
     .login-card .brand .dot {
       width: 2.4rem; height: 2.4rem; border-radius: 0.6rem;
-      background: linear-gradient(135deg, #46178F 0%, #864CBF 100%);
+      background: linear-gradient(135deg, var(--c-purple) 0%, var(--c-purple-light) 100%);
       display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 900;
     }
-    .login-card .brand span { font-weight: 900; }
+    .login-card .brand span { font-weight: 900; color: var(--page-fg); }
 
     /* Tabs */
-    .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid #e8e8f0; }
+    .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--page-line); }
     .tab {
       padding: 0.6rem 1rem; background: transparent; border: none;
-      font-size: 0.95rem; font-weight: 700; color: #888; cursor: pointer;
+      font-size: 0.95rem; font-weight: 700; color: var(--page-fg-mute); cursor: pointer;
       border-bottom: 2px solid transparent;
     }
-    .tab.active { color: #46178F; border-bottom-color: #46178F; }
+    .tab.active { color: var(--c-purple); border-bottom-color: var(--c-purple); }
   </style>
 </head>
 <body>
@@ -270,6 +284,11 @@
             </div>
           </div>
           <div class="actions">
+            <div class="theme-toggle" role="group" aria-label="المظهر">
+              <button data-theme-btn="light" title="فاتح" aria-label="المظهر الفاتح">☀</button>
+              <button data-theme-btn="dark"  title="داكن"  aria-label="المظهر الداكن">🌙</button>
+              <button data-theme-btn="system" title="تلقائي" aria-label="مظهر النظام">◐</button>
+            </div>
             <a href="/host" target="_blank">شاشة المضيف ↗</a>
             <a href="/" target="_blank">اللعبة ↗</a>
             <button class="danger" id="btn-logout">خروج</button>
@@ -565,6 +584,22 @@
   }
   function escapeAttr(s) { return escapeHtml(s); }
   function difficultyLabel(d) { return { easy: 'سهل', medium: 'متوسط', hard: 'صعب' }[d] || d; }
+
+  // ── Theme toggle ───────────────────────────────────────────────────────
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-theme-btn]');
+    if (!btn) return;
+    window.TriviaTheme && window.TriviaTheme.set(btn.dataset.themeBtn);
+  });
+  function syncThemeButtons() {
+    const choice = (window.TriviaTheme && window.TriviaTheme.get()) || 'system';
+    document.querySelectorAll('[data-theme-btn]').forEach(b => {
+      b.setAttribute('aria-pressed', b.dataset.themeBtn === choice ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('trivia:themechange', syncThemeButtons);
+  const origRender = render;
+  render = function () { origRender(); syncThemeButtons(); };
 
   // ── Boot ────────────────────────────────────────────────────────────────
   (async () => {

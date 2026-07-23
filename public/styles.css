@@ -1,29 +1,94 @@
 /* ── Arabic Trivia — shared styles ────────────────────────────────────────── */
 
 :root {
-  --bg-0: #0b0820;
-  --bg-1: #1a0b3a;
-  --bg-2: #2d1b5c;
-  --ink: #ffffff;
-  --ink-dim: #b6b0d8;
-  --ink-mute: #7a7299;
-  --gold: #ffd23f;
-  --ok: #2bd576;
-  --bad: #ff5470;
-  --line: rgba(255, 255, 255, 0.08);
-
+  /* Brand colors — never change with theme */
   --c-a: #e21b3c;   /* red */
   --c-b: #1368ce;   /* blue */
   --c-c: #d89e00;   /* yellow */
   --c-d: #26890c;   /* green */
   --c-e: #8e44ad;   /* purple (for 5th choice) */
   --c-f: #e67e22;   /* orange (for 6th choice) */
+  --c-purple: #46178F;
+  --c-purple-light: #864CBF;
+  --c-gold: #FFC00A;
+
+  /* Theme-aware surface tokens.
+     Default (no attribute) is "dark" — matches the host TV aesthetic.
+     The player phone + admin pages use a SECOND set of page-level tokens
+     (--page-bg / --page-fg) which they override per page so they can
+     stay light by default while host stays dark. */
+  --bg-0: #0b0820;
+  --bg-1: #1a0b3a;
+  --bg-2: #2d1b5c;
+  --ink: #ffffff;
+  --ink-dim: #b6b0d8;
+  --ink-mute: #7a7299;
+  --line: rgba(255, 255, 255, 0.08);
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --field-bg: rgba(255, 255, 255, 0.06);
+  --field-border: rgba(255, 255, 255, 0.1);
+
+  /* Page-level (player + admin). */
+  --page-bg: #ffffff;
+  --page-fg: #1a1a1a;
+  --page-fg-dim: #555;
+  --page-fg-mute: #999;
+  --page-line: #e2e2ec;
+  --page-card: #ffffff;
+  --page-card-2: #f8f8fc;
+  --page-card-3: #f2f2f2;
+
+  --gold: #ffd23f;
+  --ok: #2bd576;
+  --bad: #ff5470;
 
   --font-ar: "SF Arabic", "Geeza Pro", "Segoe UI Arabic", "Tahoma",
              system-ui, -apple-system, "Cairo", "Tajawal", sans-serif;
 
   --shadow-lg: 0 30px 60px -20px rgba(0, 0, 0, 0.5),
                0 18px 36px -18px rgba(0, 0, 0, 0.6);
+}
+
+/* ── LIGHT theme: host inverts, player + admin stay light ─────────────── */
+:root[data-theme="light"] {
+  --bg-0: #f4f5fa;
+  --bg-1: #ffffff;
+  --bg-2: #eef0f8;
+  --ink: #1a1240;
+  --ink-dim: #5b5478;
+  --ink-mute: #8a8299;
+  --line: rgba(20, 12, 60, 0.08);
+  --surface: rgba(20, 12, 60, 0.03);
+  --surface-2: rgba(20, 12, 60, 0.05);
+  --field-bg: #ffffff;
+  --field-border: #d8d8e4;
+  --shadow-lg: 0 30px 60px -25px rgba(20, 12, 60, 0.18),
+               0 18px 36px -22px rgba(20, 12, 60, 0.12);
+}
+
+/* ── DARK theme: player + admin darken too ───────────────────────────── */
+:root[data-theme="dark"] {
+  --bg-0: #0b0820;
+  --bg-1: #14102e;
+  --bg-2: #1f1840;
+  --ink: #ffffff;
+  --ink-dim: #b6b0d8;
+  --ink-mute: #7a7299;
+  --line: rgba(255, 255, 255, 0.08);
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --field-bg: rgba(255, 255, 255, 0.06);
+  --field-border: rgba(255, 255, 255, 0.12);
+
+  --page-bg: #0e0a26;
+  --page-fg: #f0edff;
+  --page-fg-dim: #b6b0d8;
+  --page-fg-mute: #7a7299;
+  --page-line: rgba(255, 255, 255, 0.08);
+  --page-card: #1a1438;
+  --page-card-2: #221a4a;
+  --page-card-3: #2a2058;
 }
 
 * { box-sizing: border-box; }
@@ -44,6 +109,7 @@ body {
     var(--bg-0);
   min-height: 100vh;
   overflow: hidden;
+  transition: background 250ms ease, color 250ms ease;
 }
 
 button {
@@ -100,7 +166,7 @@ input {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface);
   border: 1px solid var(--line);
   padding: 0.6rem 1.2rem;
   border-radius: 1rem;
@@ -157,7 +223,7 @@ input {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0.6rem 1.4rem;
@@ -176,7 +242,7 @@ input {
   overflow: hidden;
 }
 .player-list .chip {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0.5rem 1.1rem;
@@ -202,7 +268,7 @@ input {
 .btn:active { transform: translateY(0); }
 .btn[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
 .btn-primary { background: linear-gradient(180deg, #ffd23f 0%, #f5a623 100%); color: #2d1500; }
-.btn-secondary { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid var(--line); }
+.btn-secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
 .btn-success { background: linear-gradient(180deg, #2bd576 0%, #1aa45a 100%); color: #00321a; }
 
 .lobby-cta { display: flex; gap: 1.2rem; margin-top: 1.5vmin; flex-wrap: wrap; }
@@ -219,7 +285,7 @@ input {
   display: flex;
   align-items: center;
   gap: 2vmin;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1.4rem;
   padding: 1.5vmin 2.5vmin;
@@ -310,8 +376,9 @@ input {
   -webkit-backdrop-filter: blur(12px);
   z-index: 10;
 }
+:root[data-theme="light"] .overlay { background: rgba(244, 245, 250, 0.78); }
 .overlay .card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%);
   border: 1px solid var(--line);
   border-radius: 2.4rem;
   padding: 4vmin 5vmin;
@@ -321,6 +388,9 @@ input {
   gap: 2.5vmin;
   box-shadow: var(--shadow-lg);
 }
+:root[data-theme="light"] .overlay .card {
+  background: linear-gradient(180deg, #ffffff 0%, #fafafe 100%);
+}
 .overlay h2 { margin: 0; font-size: 5vmin; font-weight: 900; text-align: center; }
 
 .leaderboard { display: flex; flex-direction: column; gap: 1.2vmin; }
@@ -329,7 +399,7 @@ input {
   grid-template-columns: 4vmin 1fr auto;
   align-items: center;
   gap: 2vmin;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1.2rem;
   padding: 1.5vmin 2.5vmin;
@@ -340,7 +410,7 @@ input {
   display: inline-flex; align-items: center; justify-content: center;
   width: 4vmin; height: 4vmin;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
   font-weight: 900;
 }
 .lb-row.gold   { background: linear-gradient(90deg, rgba(255,210,63,0.18), rgba(255,210,63,0.05)); border-color: rgba(255,210,63,0.4); }
@@ -554,10 +624,11 @@ input {
   display: flex; flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--page-bg);
+  color: var(--page-fg);
   text-align: center;
   overflow: hidden;
+  transition: background 250ms ease, color 250ms ease;
 }
 
 .player h1 {
@@ -565,57 +636,57 @@ input {
   font-size: 8vmin;
   font-weight: 900;
   letter-spacing: -0.01em;
-  color: #1a1a1a;
+  color: var(--page-fg);
 }
 
-.player p { margin: 0; color: #555; font-size: 4vmin; line-height: 1.5; }
+.player p { margin: 0; color: var(--page-fg-dim); font-size: 4vmin; line-height: 1.5; }
 
 .field {
   display: flex; flex-direction: column; gap: 1rem; text-align: start;
   width: 100%;
 }
 .field label {
-  font-size: 3.2vmin; font-weight: 700; color: #555;
+  font-size: 3.2vmin; font-weight: 700; color: var(--page-fg-dim);
   text-transform: uppercase; letter-spacing: 0.05em;
 }
 .field input {
-  background: #f2f2f2;
-  border: 2px solid transparent;
+  background: var(--field-bg);
+  border: 2px solid var(--field-border);
   border-radius: 1rem;
   padding: 3.5vmin 4vmin;
   font-size: 5vmin;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--page-fg);
   outline: none;
   transition: border-color 150ms ease, background 150ms ease;
   width: 100%;
   -webkit-appearance: none;
   appearance: none;
 }
-.field input:focus { border-color: #46178F; background: #ffffff; }
+.field input:focus { border-color: var(--c-purple); background: var(--page-card); }
 .field input.code  { letter-spacing: 0.4em; text-align: center; text-transform: uppercase; }
-.field input::placeholder { color: #999; font-weight: 600; }
+.field input::placeholder { color: var(--page-fg-mute); font-weight: 600; }
 
-.error-msg { color: #e21b3c; font-size: 3.4vmin; font-weight: 700; min-height: 4.5vmin; }
+.error-msg { color: var(--c-a); font-size: 3.4vmin; font-weight: 700; min-height: 4.5vmin; }
 
 .player .btn {
   padding: 4vmin 5vmin;
   font-size: 5vmin;
   border-radius: 1.2rem;
 }
-.player .btn.btn-primary { background: #46178F; color: #fff; }
-.player .btn.btn-primary:hover { background: #864CBF; }
+.player .btn.btn-primary { background: var(--c-purple); color: #fff; }
+.player .btn.btn-primary:hover { background: var(--c-purple-light); }
 
 .player-lobby {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3vmin; height: 100%; background: #ffffff;
+  gap: 3vmin; height: 100%; background: var(--page-bg);
 }
-.player-lobby .big { font-size: 7vmin; font-weight: 900; color: #1a1a1a; }
-.player-lobby .small { font-size: 4vmin; color: #777; }
+.player-lobby .big { font-size: 7vmin; font-weight: 900; color: var(--page-fg); }
+.player-lobby .small { font-size: 4vmin; color: var(--page-fg-mute); }
 .player-lobby .pulse {
   width: 12vmin; height: 12vmin;
   border-radius: 50%;
-  background: #46178F;
+  background: var(--c-purple);
   animation: pop 1.4s ease-in-out infinite;
 }
 @keyframes pop { 0%,100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
@@ -627,8 +698,8 @@ input {
   height: 100%;
   min-height: 0;
   position: relative;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--page-bg);
+  color: var(--page-fg);
 }
 
 /* Top corners: PIN (left) + counter (right) */
@@ -644,7 +715,7 @@ input {
   pointer-events: none;
   font-weight: 800;
   font-size: 3.6vmin;
-  color: #1a1a1a;
+  color: var(--page-fg);
   direction: ltr;
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;
@@ -658,7 +729,7 @@ input {
   font-size: 4.6vmin;
   font-weight: 700;
   line-height: 1.25;
-  color: #1a1a1a;
+  color: var(--page-fg);
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -678,13 +749,13 @@ input {
   flex: 1 1 0;
   min-height: 0;
   padding: 0;
-  background: #fff;  /* the gap appears as thin white lines */
+  background: var(--page-bg);  /* the gap appears as thin lines */
 }
 
 /* Purple progress bar (timer) — sits between the 4 blocks and the bottom chrome */
 .player-progress {
   height: 7px;
-  background: #ececec;
+  background: var(--page-line);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -693,11 +764,11 @@ input {
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
-  background: #864CBF;
+  background: var(--c-purple-light);
   width: 100%;
   transition: width 1s linear;
 }
-.player-progress .fill.warn { background: #e21b3c; }
+.player-progress .fill.warn { background: var(--c-a); }
 
 /* Bottom corners: nickname (left) + score pill (right) */
 .player-question .corner-bottom {
@@ -712,12 +783,12 @@ input {
   pointer-events: none;
   font-weight: 800;
   font-size: 4vmin;
-  color: #1a1a1a;
+  color: var(--page-fg);
 }
 .player-question .corner-bottom .name { letter-spacing: 0.01em; }
 .player-question .corner-bottom .score {
-  background: #1a1a1a;
-  color: #ffffff;
+  background: var(--page-fg);
+  color: var(--page-bg);
   border-radius: 999px;
   padding: 0.6rem 1.6rem;
   font-weight: 900;
@@ -752,48 +823,103 @@ input {
 }
 .pchoice .label { font-size: 3.8vmin; line-height: 1.15; max-width: 92%; }
 .pchoice.picked    { box-shadow: inset 0 0 0 1vmin #fff; }
-.pchoice.correct   { box-shadow: inset 0 0 0 0.6vmin #2bd576, 0 0 0 0.6vmin #2bd576; }
+.pchoice.correct   { box-shadow: inset 0 0 0 0.6vmin var(--ok), 0 0 0 0.6vmin var(--ok); }
 .pchoice.wrong     { filter: brightness(0.45) saturate(0.4); }
 .pchoice.dim       { filter: brightness(0.55) saturate(0.4); }
 .pchoice.disabled  { pointer-events: none; }
 
 /* Kahoot's exact 4 answer colors */
-.pchoice.pa { background: #E21B3C; }  /* ▲ red triangle */
-.pchoice.pb { background: #1368CE; }  /* ◆ blue diamond */
-.pchoice.pc { background: #D89E00; }  /* ● yellow circle */
-.pchoice.pd { background: #26890C; }  /* ■ green square */
+.pchoice.pa { background: var(--c-a); }  /* ▲ red triangle */
+.pchoice.pb { background: var(--c-b); }  /* ◆ blue diamond */
+.pchoice.pc { background: var(--c-c); }  /* ● yellow circle */
+.pchoice.pd { background: var(--c-d); }  /* ■ green square */
 
 .player-result {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4vmin; height: 100%; background: #ffffff; color: #1a1a1a;
+  gap: 4vmin; height: 100%; background: var(--page-bg); color: var(--page-fg);
 }
 .player-result .icon { font-size: 22vmin; line-height: 1; }
-.player-result .icon.ok  { color: #26890C; }
-.player-result .icon.bad { color: #e21b3c; }
-.player-result .icon.miss { color: #999; }
-.player-result h2 { margin: 0; font-size: 7vmin; font-weight: 900; color: #1a1a1a; }
-.player-result .points { font-size: 7vmin; color: #46178F; font-weight: 900; direction: ltr; unicode-bidi: isolate; }
-.player-result .sub { font-size: 4vmin; color: #777; }
+.player-result .icon.ok  { color: var(--c-d); }
+.player-result .icon.bad { color: var(--c-a); }
+.player-result .icon.miss { color: var(--page-fg-mute); }
+.player-result h2 { margin: 0; font-size: 7vmin; font-weight: 900; color: var(--page-fg); }
+.player-result .points { font-size: 7vmin; color: var(--c-purple); font-weight: 900; direction: ltr; unicode-bidi: isolate; }
+.player-result .sub { font-size: 4vmin; color: var(--page-fg-dim); }
 
-.player-leaderboard { display: flex; flex-direction: column; gap: 1.6vmin; height: 100%; overflow: hidden; background: #ffffff; color: #1a1a1a; padding: 4vmin; }
+.player-leaderboard { display: flex; flex-direction: column; gap: 1.6vmin; height: 100%; overflow: hidden; background: var(--page-bg); color: var(--page-fg); padding: 4vmin; }
 .player-leaderboard h2 { margin: 0 0 1vmin 0; font-size: 5.5vmin; text-align: center; font-weight: 900; }
 .player-leaderboard .lb-row {
-  background: #f2f2f2;
-  color: #1a1a1a;
+  background: var(--page-card-3);
+  color: var(--page-fg);
   border: none;
   border-radius: 1rem;
   padding: 2vmin 3vmin;
   font-size: 4vmin;
   font-weight: 700;
 }
-.player-leaderboard .lb-row.gold   { background: linear-gradient(90deg, #fff3cf, #ffe89a); }
-.player-leaderboard .lb-row.silver { background: linear-gradient(90deg, #ecedf0, #d8d9de); }
-.player-leaderboard .lb-row.bronze { background: linear-gradient(90deg, #f4d8b8, #ecc094); }
-.player-leaderboard .lb-row .rank { background: rgba(0,0,0,0.08); color: #1a1a1a; }
+.player-leaderboard .lb-row.gold   { background: linear-gradient(90deg, #fff3cf, #ffe89a); color: #2d1500; }
+.player-leaderboard .lb-row.silver { background: linear-gradient(90deg, #ecedf0, #d8d9de); color: #1a1a2e; }
+.player-leaderboard .lb-row.bronze { background: linear-gradient(90deg, #f4d8b8, #ecc094); color: #5a2a08; }
+.player-leaderboard .lb-row .rank { background: rgba(0,0,0,0.08); color: var(--page-fg); }
 .player-leaderboard .me {
   background: linear-gradient(90deg, #fff3cf, #ffe89a) !important;
+  color: #2d1500 !important;
   border: 2px solid #d89e00;
 }
 
 /* QR placeholder visibility */
 .lobby-qr svg { display: block; }
+
+/* ── THEME TOGGLE ─────────────────────────────────────────────────────────── */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+.theme-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--ink-dim);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transition: background 150ms ease, color 150ms ease;
+  padding: 0;
+}
+.theme-toggle button:hover { color: var(--ink); }
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--c-purple);
+  color: #fff;
+}
+.theme-toggle button:focus-visible {
+  outline: 2px solid var(--c-purple-light);
+  outline-offset: 2px;
+}
+
+/* Player join screen — inline at the top of the form */
+.player .theme-toggle { margin-bottom: 1vmin; }
+.player .theme-toggle button { width: 2.2rem; height: 2.2rem; font-size: 1rem; }
+
+/* Host page — fixed floating toggle, always visible regardless of which
+   screen is shown. Lives OUTSIDE #app so it survives SPA re-renders.
+   Sits in the bottom-right corner of the screen — clear of the header
+   (top) and the question/choice grid (center) and the foot text (bottom-left). */
+body > .theme-toggle {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 50;
+}
+body > .theme-toggle button { width: 1.9rem; height: 1.9rem; font-size: 0.9rem; }
