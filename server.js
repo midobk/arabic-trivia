@@ -348,6 +348,12 @@ function handlePlayerMessage(ws, msg) {
       // updates don't change who has answered, just what they picked.
       if (wasFirst) {
         broadcastToHost({ type: 'player:answered', name, count: game.answers.size, total: game.players.size });
+        // Speed-up: if every active player has answered, end the question
+        // immediately instead of waiting out the timer. Late answer-changes
+        // (wasFirst === false) don't retrigger this.
+        if (game.answers.size >= game.players.size && game.players.size > 0) {
+          revealAnswers();
+        }
       } else {
         broadcastToHost({ type: 'player:changed', name, choice });
       }
