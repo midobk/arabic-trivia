@@ -803,13 +803,17 @@ input {
   line-height: 1.25;
   color: var(--page-fg);
   text-align: center;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  line-clamp: 2;
+  /* Robust 2-line clamp: use max-height instead of -webkit-line-clamp.
+     -webkit-line-clamp can collapse the element to 0 height on some
+     iOS Safari versions, making the question text invisible while the
+     answer blocks and corners remain visible. max-height + overflow:hidden
+     guarantees the text is always rendered (just clipped at 2 lines). */
+  max-height: calc(4.6vmin * 1.25 * 2 + 0.2vmin);
   overflow: hidden;
-  text-overflow: ellipsis;
   flex-shrink: 0;
+  /* Sit above the player-choices grid in case of any z-index quirks. */
+  position: relative;
+  z-index: 1;
 }
 
 /* 2x2 grid — dominant, edge-to-edge-ish, no rounded corners (Kahoot-style) */
