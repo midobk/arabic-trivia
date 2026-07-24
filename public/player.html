@@ -264,7 +264,12 @@
       localStorage.setItem('trivia_name', name);
       S.phase = 'joining';
       S.error = '';
-      render();
+      // Give immediate click feedback — disable the button + change its text
+      // so a slow socket doesn't look like the click did nothing. Avoids the
+      // S.phase = 'joining' render gap (which has no render handler and would
+      // re-render the form). C5 fix.
+      const btn = document.getElementById('btn-join');
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
       // Wait for open socket
       if (ws && ws.readyState === 1) {
         send({ type: 'player:join', name, code });
@@ -458,12 +463,27 @@
         </div>`;
       const me = all.find(p => p.name === S.name);
       const myRank = all.findIndex(p => p.name === S.name) + 1;
+      // player-end wrapper gets the brand purple background so the white
+      // .podium .name text (designed for the host's purple end-screen) stays
+      // readable. C1 fix.
       app.innerHTML = `
-        <div class="player">
+        <div class="player player-end">
           <h1>🏆 انتهت اللعبة</h1>
           ${podiumHtml}
           ${me ? `<div class="sub" style="text-align:center">ترتيبك: <strong>${myRank}</strong> بـ <strong>${me.score.toLocaleString('en-US')}</strong> نقطة</div>` : ''}
+          <button class="btn btn-primary" id="btn-back-join" style="margin-top:3vmin">العودة إلى شاشة الانضمام</button>
         </div>`;
+      document.getElementById('btn-back-join').onclick = () => {
+        S.phase = 'join';
+        S.error = '';
+        S.name = '';
+        S.kickReason = null;
+        try { localStorage.removeItem('trivia_name'); } catch (_) {}
+        if (ws && ws.readyState <= 1) { try { ws.close(); } catch (_) {} }
+        wsRetries = 0;
+        render();
+        connect();
+      };
     }
     function podiumStep(p, cls, place) {
       if (!p) return `<div class="step ${cls}" style="opacity:0.3"><div class="plinth ${cls}">${place}</div></div>`;

@@ -361,7 +361,7 @@ input {
   font-size: 4vmin;
   flex-shrink: 0;
 }
-.choice .label { flex: 1; line-height: 1.25; }
+.choice .label { flex: 1; line-height: 1.25; text-align: center; }
 .choice .count {
   position: absolute;
   inset-inline-end: 2vmin;
@@ -426,6 +426,7 @@ input {
   background: linear-gradient(180deg, #ffffff 0%, #fafafe 100%);
 }
 .overlay h2 { margin: 0; font-size: 5vmin; font-weight: 900; text-align: center; }
+.overlay h2 .answer-text { color: var(--c-gold); display: inline-block; margin-inline-start: 0.5rem; }
 
 .leaderboard { display: flex; flex-direction: column; gap: 1.2vmin; }
 .lb-row {
@@ -719,6 +720,28 @@ input {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3vmin; height: 100%; background: var(--page-bg);
 }
+/* End screen uses the brand purple (matches the host's end-screen) so the
+   white .podium .name text stays readable on both light and dark themes. */
+.player.player-end {
+  background: #46178F;
+  color: #ffffff;
+  justify-content: center;
+  padding: 4vmin;
+  position: relative;
+  overflow: hidden;
+}
+.player.player-end::before {
+  /* Subtle radial highlight, matches the host's end-screen atmosphere */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.player.player-end > * { position: relative; z-index: 1; }
+.player.player-end h1 { color: #ffffff; }
+.player.player-end .sub { color: rgba(255, 255, 255, 0.9); }
+.player.player-end .sub strong { color: #FFC00A; }
 .player-lobby .big { font-size: 7vmin; font-weight: 900; color: var(--page-fg); }
 .player-lobby .small { font-size: 4vmin; color: var(--page-fg-mute); }
 .player-lobby .pulse {

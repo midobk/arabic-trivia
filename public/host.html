@@ -276,7 +276,7 @@
       const overlay = revealed ? `
         <div class="overlay">
           <div class="card">
-            <h2>${S.correctIndex === q.choices.findIndex(c => c.text === S.currentQ.choices[S.correctIndex].text) ? '✓ الإجابة الصحيحة' : 'الإجابة الصحيحة'}</h2>
+            <h2>✓ الإجابة الصحيحة: <span class="answer-text">${escapeHtml(q.choices[S.correctIndex]?.text || '')}</span></h2>
             <div class="lobby-cta" style="justify-content:center">
               <button class="btn btn-primary" id="btn-next">${S.currentQ.index === S.currentQ.total - 1 ? 'النتائج النهائية' : 'النتائج المؤقتة ▶'}</button>
             </div>
