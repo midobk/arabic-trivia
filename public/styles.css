@@ -245,10 +245,44 @@ input {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem 0.6rem 0.5rem 1.1rem;
   font-size: 1.9vmin;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
 }
+.player-list .chip .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 18ch; }
+
+/* ── KICK BUTTON ────────────────────────────────────────────────────── */
+
+.kick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-dim);
+  border: 1px solid transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.kick:hover {
+  background: var(--bad);
+  color: #fff;
+  border-color: var(--bad);
+}
+.kick:active { transform: scale(0.92); }
+.kick:focus-visible { outline: 2px solid var(--bad); outline-offset: 2px; }
+/* Smaller inside chips; larger on leaderboard rows */
+.player-list .chip .kick { width: 1.9rem; height: 1.9rem; font-size: 1rem; }
 
 /* Big primary action button */
 .btn {
@@ -396,7 +430,7 @@ input {
 .leaderboard { display: flex; flex-direction: column; gap: 1.2vmin; }
 .lb-row {
   display: grid;
-  grid-template-columns: 4vmin 1fr auto;
+  grid-template-columns: 4vmin 1fr auto auto;
   align-items: center;
   gap: 2vmin;
   background: var(--surface);
@@ -413,6 +447,8 @@ input {
   background: var(--surface-2);
   font-weight: 900;
 }
+.lb-row .lb-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-row .kick { width: 2.6rem; height: 2.6rem; font-size: 1.2rem; }
 .lb-row.gold   { background: linear-gradient(90deg, rgba(255,210,63,0.18), rgba(255,210,63,0.05)); border-color: rgba(255,210,63,0.4); }
 .lb-row.silver { background: linear-gradient(90deg, rgba(200,200,220,0.18), rgba(200,200,220,0.05)); border-color: rgba(200,200,220,0.4); }
 .lb-row.bronze { background: linear-gradient(90deg, rgba(205,127,50,0.18), rgba(205,127,50,0.05)); border-color: rgba(205,127,50,0.4); }
@@ -584,7 +620,7 @@ input {
 }
 .podium-rest .lb-row {
   display: grid;
-  grid-template-columns: 6vmin 1fr auto;
+  grid-template-columns: 6vmin 1fr auto auto;
   align-items: center;
   gap: 2vmin;
   background: rgba(255, 255, 255, 0.08);
@@ -601,6 +637,8 @@ input {
   background: rgba(255, 255, 255, 0.15);
   font-weight: 900;
 }
+.podium-rest .lb-row .kick { color: rgba(255,255,255,0.7); }
+.podium-rest .lb-row .kick:hover { color: #fff; }
 .podium-rest .lb-row .score {
   color: #FFC00A;
   font-weight: 900;

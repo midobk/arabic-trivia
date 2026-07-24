@@ -198,7 +198,7 @@
     function renderLobby() {
       const qrHtml = document.getElementById('qr-template').innerHTML;
       const playerChips = S.players.length
-        ? S.players.map(p => `<div class="chip">${escapeHtml(p.name)}</div>`).join('')
+        ? S.players.map(p => `<div class="chip"><span class="name">${escapeHtml(p.name)}</span><button class="kick" data-kick="${escapeHtml(p.name)}" aria-label="طرد ${escapeHtml(p.name)}" title="طرد">×</button></div>`).join('')
         : `<div class="chip" style="opacity:.6">في انتظار اللاعبين…</div>`;
       app.innerHTML = `
         <div class="host">
@@ -221,6 +221,7 @@
                 <div class="player-list">${playerChips}</div>
                 <div class="lobby-cta">
                   <button class="btn btn-primary" id="btn-start" ${S.players.length === 0 ? 'disabled' : ''}>▶ ابدأ اللعبة</button>
+                  ${S.players.length > 0 ? `<button class="btn btn-secondary" id="btn-clear" title="طرد جميع اللاعبين وتصفير القائمة">↺ تصفير اللوبي</button>` : ''}
                 </div>
                 <div class="url">أو افتح يدويًا: <strong>${escapeHtml(window.location.origin)}</strong></div>
               </div>
@@ -232,6 +233,23 @@
           </div>
         </div>`;
       document.getElementById('btn-start').onclick = () => send({ type: 'host:start' });
+      const btnClear = document.getElementById('btn-clear');
+      if (btnClear) {
+        btnClear.onclick = () => {
+          if (confirm('طرد جميع اللاعبين من اللوبي وبدء قائمة جديدة؟')) {
+            send({ type: 'host:clear' });
+          }
+        };
+      }
+      // Kick buttons (delegated: chips are re-rendered on every state change).
+      document.querySelectorAll('[data-kick]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`طرد "${btn.dataset.kick}" من اللعبة؟`)) {
+            send({ type: 'host:kick', name: btn.dataset.kick });
+          }
+        };
+      });
     }
 
     function renderAsking(opts = {}) {
@@ -303,8 +321,9 @@
         const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
         return `<div class="lb-row ${cls}">
           <div class="rank">${i + 1}</div>
-          <div>${escapeHtml(p.name)}</div>
+          <div class="lb-name">${escapeHtml(p.name)}</div>
           <div class="score">${p.score.toLocaleString('en-US')}</div>
+          <button class="kick" data-kick="${escapeHtml(p.name)}" aria-label="طرد ${escapeHtml(p.name)}" title="طرد">×</button>
         </div>`;
       }).join('');
       const isLast = S.currentQ && S.currentQ.index === S.currentQ.total - 1;
@@ -322,6 +341,14 @@
         </div>`;
       const btn = document.getElementById('btn-next');
       if (btn) btn.onclick = () => send({ type: 'host:next' });
+      document.querySelectorAll('[data-kick]').forEach(b => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`طرد "${b.dataset.kick}" من اللعبة؟`)) {
+            send({ type: 'host:kick', name: b.dataset.kick });
+          }
+        };
+      });
     }
 
     function renderEnd() {
@@ -352,8 +379,9 @@
       const restHtml = rest.length ? `<div class="podium-rest">${rest.map((p, i) => `
         <div class="lb-row">
           <div class="rank">${i + 4}</div>
-          <div>${escapeHtml(p.name)}</div>
+          <div class="lb-name">${escapeHtml(p.name)}</div>
           <div class="score">${p.score.toLocaleString('en-US')}</div>
+          <button class="kick" data-kick="${escapeHtml(p.name)}" aria-label="طرد ${escapeHtml(p.name)}" title="طرد">×</button>
         </div>`).join('')}</div>` : '';
       app.innerHTML = `
         <div class="end-screen">
@@ -372,6 +400,14 @@
         S.currentQ = null;
         send({ type: 'host:restart' });
       };
+      document.querySelectorAll('[data-kick]').forEach(b => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`طرد "${b.dataset.kick}" من اللعبة؟`)) {
+            send({ type: 'host:kick', name: b.dataset.kick });
+          }
+        };
+      });
     }
     function podiumStep(p, cls, place) {
       if (!p) return `<div class="step ${cls}" style="opacity:0.3"><div class="plinth ${cls}">${place}</div></div>`;

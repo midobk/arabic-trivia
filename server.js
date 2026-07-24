@@ -220,14 +220,20 @@ function endGame() {
 function resetGame() {
   if (game.timer) { clearTimeout(game.timer); game.timer = null; }
   if (game.tickTimer) { clearInterval(game.tickTimer); game.tickTimer = null; }
+  // Tell every player to head back to the lobby. We KEEP the player list
+  // (just zero their scores) so the same group can play another round
+  // without re-entering their name. The host can use a separate "clear
+  // lobby" action (host:clear) to drop everyone if they want a fresh start.
   for (const p of game.players.values()) {
+    p.score = 0;
     sendTo(p.ws, { type: 'game:reset', code: game.code });
   }
-  game.players.clear();
   game.answers.clear();
   game.state = 'lobby';
   game.currentQIndex = -1;
-  sendTo(game.host, { type: 'host:state', phase: 'lobby', code: game.code, players: [] });
+  // Snapshot player names + scores (0) for the host state.
+  const lobbyPlayers = Array.from(game.players, ([name, p]) => ({ name, score: 0 }));
+  sendTo(game.host, { type: 'host:state', phase: 'lobby', code: game.code, players: lobbyPlayers });
 }
 
 // ── WebSocket ───────────────────────────────────────────────────────────────
@@ -267,6 +273,41 @@ function handleHostMessage(ws, msg) {
     case 'host:start':   if (game.state === 'lobby')      startGame();     break;
     case 'host:next':    if (game.state === 'reveal' || game.state === 'leaderboard') hostNext(); break;
     case 'host:restart': resetGame(); break;
+    case 'host:clear': {
+      // Drop every player from the lobby. Use case: the host wants a
+      // truly fresh game (new group) without a server restart. Players
+      // see a "session ended" screen and can rejoin manually.
+      if (game.timer) { clearTimeout(game.timer); game.timer = null; }
+      if (game.tickTimer) { clearInterval(game.tickTimer); game.tickTimer = null; }
+      for (const p of game.players.values()) {
+        sendTo(p.ws, { type: 'player:kicked', reason: 'session_ended' });
+      }
+      game.players.clear();
+      game.answers.clear();
+      game.state = 'lobby';
+      game.currentQIndex = -1;
+      sendTo(game.host, { type: 'host:state', phase: 'lobby', code: game.code, players: [] });
+      break;
+    }
+    case 'host:kick': {
+      // Host wants to remove a player. The host's `ws` check is implicit —
+      // only the live host can reach this branch (player messages take the
+      // other branch). We still validate the name and only act if the player
+      // is actually in the game.
+      const name = (msg.name || '').toString();
+      const entry = game.players.get(name);
+      if (entry) {
+        sendTo(entry.ws, { type: 'player:kicked' });
+        game.players.delete(name);
+        game.answers.delete(name);
+        broadcastToHost({ type: 'player:left', name, count: game.players.size, players: getPlayersList() });
+        // If the kicked player was the only one and a game is running, end it.
+        if (game.state !== 'lobby' && game.state !== 'end' && game.players.size === 0) {
+          endGame();
+        }
+      }
+      break;
+    }
   }
 }
 

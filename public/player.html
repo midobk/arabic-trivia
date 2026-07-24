@@ -18,9 +18,10 @@
 
     // ── State ───────────────────────────────────────────────────────────────
     const S = {
-      phase: 'join',          // join | lobby | asking | answered | reveal | leaderboard | end | error
+      phase: 'join',          // join | lobby | asking | answered | reveal | leaderboard | end | error | reconnecting | kicked | demo
       code: '{{INITIAL_CODE}}',
       name: localStorage.getItem('trivia_name') || '',
+      kickReason: null,       // 'kicked' (default) | 'session_ended'
       showQA: true,           // Kahoot "Show questions on devices" mode — ON by default
       players: [],
       currentQ: null,
@@ -37,22 +38,34 @@
     // ── WebSocket ───────────────────────────────────────────────────────────
     let ws = null;
     let wsRetries = 0;
-    const MAX_WS_RETRIES = 3;
+    let wsStopped = false;   // set true when the player is kicked or
+                             // explicitly leaves — prevents onclose from
+                             // auto-reconnecting and clobbering the UI.
+    // Vercel's static deployment can't run a WebSocket, so we render a
+    // "demo" banner only on vercel.app. For any other host (Railway,
+    // localhost, tunnel, …) we keep reconnecting forever with exponential
+    // backoff — a flaky network or a server redeploy shouldn't kick the
+    // player out to a marketing page.
+    const isVercel = /vercel\.app$/.test(location.hostname);
+    let reconnectTimer = null;
+    function backoffDelay() {
+      // 1s, 2s, 4s, 8s … capped at 15s
+      return Math.min(15000, 1000 * Math.pow(2, Math.min(wsRetries, 4)));
+    }
     function connect() {
-      // On the Vercel static deployment (no Node server), `ws://vercel.app`
-      // will fail. After MAX_WS_RETRIES failures we render a demo banner
-      // instead of an infinite "connecting" loop.
-      const isVercel = /vercel\.app$/.test(location.hostname);
+      wsStopped = false;
       if (isVercel) { S.phase = 'demo'; render(); return; }
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       try {
         ws = new WebSocket(`${proto}://${location.host}`);
       } catch (e) {
-        S.phase = 'demo'; render();
+        scheduleReconnect();
         return;
       }
       ws.onopen = () => {
-        // Rejoin the game if we've already joined (page refresh mid-game).
+        // Reset retry counter on every successful open so brief hiccups
+        // don't accumulate toward a fake "give up" state.
+        wsRetries = 0;
         if (S.phase !== 'join' && S.name && S.code) {
           send({ type: 'player:join', name: S.name, code: S.code });
         }
@@ -62,17 +75,15 @@
         let m; try { m = JSON.parse(e.data); } catch (_) { return; }
         handle(m);
       };
-      ws.onclose = () => {
-        if (S.phase !== 'join') S.phase = 'reconnecting';
-        render();
-        wsRetries++;
-        if (wsRetries > MAX_WS_RETRIES) { S.phase = 'demo'; render(); return; }
-        setTimeout(connect, 1500);
-      };
-      ws.onerror = () => {
-        wsRetries++;
-        if (wsRetries > MAX_WS_RETRIES) { S.phase = 'demo'; render(); return; }
-      };
+      ws.onclose = () => { if (!wsStopped) scheduleReconnect(); };
+      ws.onerror = () => { /* onclose will follow — reconnect is handled there */ };
+    }
+    function scheduleReconnect() {
+      wsRetries++;
+      if (S.phase !== 'join' && S.phase !== 'demo' && S.phase !== 'kicked') S.phase = 'reconnecting';
+      render();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, backoffDelay());
     }
 
     function renderDemoBanner() {
@@ -178,6 +189,19 @@
           render();
           break;
         }
+        case 'player:kicked': {
+          // Host removed us from the current game. Close the socket (the
+          // onclose handler will see wsStopped=true and skip auto-reconnect)
+          // and show a "you've been kicked" screen with a way to rejoin.
+          // `reason` is optional: 'session_ended' = host cleared the lobby.
+          wsStopped = true;
+          S.phase = 'kicked';
+          S.kickReason = m.reason || 'kicked';
+          S.name = '';
+          if (ws && ws.readyState <= 1) { try { ws.close(); } catch (_) {} }
+          render();
+          break;
+        }
       }
     }
 
@@ -195,6 +219,7 @@
         case 'end':               return renderEnd();
         case 'error_game_started':return renderErrorStarted();
         case 'reconnecting':      return renderReconnecting();
+        case 'kicked':            return renderKicked();
         case 'demo':              return renderDemoBanner();
         default:                  return renderJoin();
       }
@@ -254,6 +279,33 @@
         <div class="pulse" style="background:var(--ink-mute)"></div>
         <h1>جاري إعادة الاتصال…</h1>
       </div>`;
+    }
+    function renderKicked() {
+      // The host removed us from the current game. Offer a way back to the
+      // join screen so the player can re-enter the same game (or another).
+      const isSessionEnd = S.kickReason === 'session_ended';
+      app.innerHTML = `<div class="player" style="justify-content:center; gap:4vmin; text-align:center">
+        <div style="font-size:18vmin; color:${isSessionEnd ? 'var(--ink-dim)' : 'var(--c-a)'}">${isSessionEnd ? '🔌' : '🚫'}</div>
+        <h1 style="color:var(--page-fg)">${isSessionEnd ? 'انتهت الجلسة' : 'تم طردك من اللعبة'}</h1>
+        <p style="max-width:80%; color:var(--page-fg-dim)">
+          ${isSessionEnd
+            ? 'أنهى المضيف الجلسة. يمكنك الانضمام إلى لعبة جديدة من البداية.'
+            : 'أزالك المضيف من هذه اللعبة. يمكنك الانضمام مرة أخرى إذا سمح لك.'}
+        </p>
+        <button class="btn btn-primary" id="btn-back-join" style="margin-top:2vmin">العودة إلى شاشة الانضمام</button>
+      </div>`;
+      document.getElementById('btn-back-join').onclick = () => {
+        S.phase = 'join';
+        S.error = '';
+        S.name = '';
+        S.kickReason = null;
+        try { localStorage.removeItem('trivia_name'); } catch (_) {}
+        // Reconnect so the player can rejoin the game.
+        if (ws && ws.readyState <= 1) { try { ws.close(); } catch (_) {} }
+        wsRetries = 0;
+        render();
+        connect();
+      };
     }
     function renderErrorStarted() {
       app.innerHTML = `<div class="player" style="justify-content:center; text-align:center; gap:3vmin">
