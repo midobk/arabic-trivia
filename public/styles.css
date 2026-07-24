@@ -824,7 +824,6 @@ input {
   gap: 4px;  /* tiny gap; Kahoot uses 4–6px */
   flex: 1 1 0;
   min-height: 0;
-  padding: 0;
   background: var(--page-bg);  /* the gap appears as thin lines */
 }
 
@@ -846,11 +845,12 @@ input {
 }
 .player-progress .fill.warn { background: var(--c-a); }
 
-/* Bottom corners: nickname (left) + score pill (right) */
+/* Bottom corners: nickname (left) + score pill (right).
+   Now a flex child of .player-question so it naturally claims its own row
+   after the progress bar — the choice grid is guaranteed not to extend
+   under the score/name chrome on any viewport or safe-area. */
 .player-question .corner-bottom {
-  position: absolute;
-  bottom: 0;
-  inset-inline: 0;
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -860,8 +860,6 @@ input {
   font-weight: 800;
   font-size: 4vmin;
   color: var(--page-fg);
-  /* Safe-area-aware background so the score pill and home indicator
-     sit on a solid backdrop (not the page content bleeding through). */
   background: var(--page-bg);
 }
 .player-question .corner-bottom .name { letter-spacing: 0.01em; }

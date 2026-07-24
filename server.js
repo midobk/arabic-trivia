@@ -171,14 +171,28 @@ function revealAnswers() {
   const correctIndex = q.choices.findIndex((c) => c.correct);
   const duration = SETTINGS.timePerQuestion;
 
-  // Score every player (correct, wrong, didn't-answer). Points are based on
-  // how FAST the player answered (their tap time), not when reveal fires.
+  // Scoring rules:
+  //   * First ANSWER_GRACE seconds are a "free zone" — any tap in that
+  //     window earns the full 1000 points. Subtle (not shown to the
+  //     player); the visible timer still counts from the full duration.
+  //   * After the grace, points scale linearly to 0 at the end of the timer.
+  //   * `ans.time` is overwritten on every answer-change, so changing your
+  //     pick is auto-penalizing: the new tap time is later → fewer points.
+  //     A still-correct late change still earns *some* points, so a player
+  //     who realizes they screwed up can still recover.
+  const ANSWER_GRACE = 3; // seconds
+  const scoringWindow = Math.max(1, duration - ANSWER_GRACE);
+  function scoreFor(t) {
+    if (t <= ANSWER_GRACE) return 1000;
+    return Math.max(0, Math.round(1000 * (1 - (t - ANSWER_GRACE) / scoringWindow)));
+  }
+
   for (const [name, p] of game.players) {
     const ans = game.answers.get(name);
     if (!ans) {
       sendTo(p.ws, { type: 'answer:result', status: 'no_answer', correct: false, points: 0, total: p.score, correctIndex });
     } else if (ans.choice === correctIndex) {
-      const points = Math.max(0, Math.round(1000 * (1 - ans.time / duration)));
+      const points = scoreFor(ans.time);
       p.score += points;
       sendTo(p.ws, { type: 'answer:result', status: 'correct', correct: true, points, total: p.score, correctIndex });
     } else {
