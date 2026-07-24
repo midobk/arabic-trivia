@@ -199,7 +199,7 @@
       const qrHtml = document.getElementById('qr-template').innerHTML;
       const playerChips = S.players.length
         ? S.players.map(p => `<div class="chip"><span class="name">${escapeHtml(p.name)}</span><button class="kick" data-kick="${escapeHtml(p.name)}" aria-label="طرد ${escapeHtml(p.name)}" title="طرد">×</button></div>`).join('')
-        : `<div class="chip" style="opacity:.6">في انتظار اللاعبين…</div>`;
+        : `<div class="empty-hint">في انتظار اللاعبين…</div>`;
       app.innerHTML = `
         <div class="host">
           <header class="host-header">
@@ -359,7 +359,7 @@
       const confettiColors = ['#E21B3C','#1368CE','#D89E00','#26890C','#ffffff','#FF8C00','#864CBF'];
       const confettiHtml = `<div class="confetti">${
         Array.from({ length: 90 }, () => {
-          const left = Math.random() * 100;
+          const left = Math.random() * 98;
           const dur = 3 + Math.random() * 4;          // 3-7s fall time
           const delay = Math.random() * 5;             // stagger
           const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
@@ -381,7 +381,6 @@
           <div class="rank">${i + 4}</div>
           <div class="lb-name">${escapeHtml(p.name)}</div>
           <div class="score">${p.score.toLocaleString('en-US')}</div>
-          <button class="kick" data-kick="${escapeHtml(p.name)}" aria-label="طرد ${escapeHtml(p.name)}" title="طرد">×</button>
         </div>`).join('')}</div>` : '';
       app.innerHTML = `
         <div class="end-screen">

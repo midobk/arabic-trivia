@@ -424,6 +424,7 @@
             <div class="pin">PIN: ${escapeHtml(S.code)}</div>
             <div class="counter">${q.index + 1} of ${q.total}</div>
           </div>
+          ${S.showQA ? `<div class="q-text">${escapeHtml(q.question)}</div>` : ''}
           <div class="player-choices">${buttons}</div>
           <div class="player-progress"><div class="fill" style="width:0%"></div></div>
           <div class="corner-bottom">
